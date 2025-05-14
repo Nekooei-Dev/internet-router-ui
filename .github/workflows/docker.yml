@@ -34,7 +34,7 @@ jobs:
         docker save -o internet-ui.tar internet-router-ui
 
     - name: Upload .tar file as an artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: internet-ui-tar
         path: internet-ui.tar
