@@ -5,19 +5,17 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-<h2>🌐 انتخاب اینترنت برای IP {{ ip }}</h2>
+<h2>🌐 انتخاب اینترنت</h2>
 <form method="post">
-  <select name="route" required>
+  <select name="route">
     <option value="irancell">ایرانسل</option>
     <option value="hamrahaval">همراه اول</option>
     <option value="adsl">ADSL</option>
     <option value="anten">آنتن</option>
   </select>
-  <input type="submit" value="اعمال">
+  <input type="submit" value="اعمال تغییر">
 </form>
-{% if message %}
 <p>{{ message }}</p>
-{% endif %}
 <footer>ساخته شده و پشتیبانی توسط مصطفی نکویی</footer>
 </body>
 </html>
