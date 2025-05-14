@@ -5,6 +5,9 @@ on:
     branches:
       - main  # این کار فقط در زمان push به برنچ main انجام می‌شود.
 
+permissions:
+  packages: write  # دسترسی برای نوشتن در GitHub Container Registry
+
 jobs:
   build:
     runs-on: ubuntu-latest
