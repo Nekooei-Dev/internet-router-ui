@@ -1,23 +1,19 @@
 name: Build and Deploy Docker Image
 
-
 on:
   push:
     branches:
       - main  # این کار فقط در زمان push به برنچ main انجام می‌شود.
-
-permissions:
-  packages: write  # دسترسی برای نوشتن در GitHub Container Registry      
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3  # استفاده از نسخه v3 برای اکشن checkout
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v2  # نسخه پایدار v2
 
       - name: Cache Docker layers
         uses: actions/cache@v3  # تغییر نسخه به v3
@@ -27,12 +23,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-
       - name: Build Docker image
         run: |
           docker buildx build --platform linux/arm64,linux/amd64 -t your-username/your-image-name:latest .
 
+      - name: Log in to Docker Hub
+        run: |
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
       - name: Push Docker image to Docker Hub (or GitHub Container Registry)
         run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           docker push your-username/your-image-name:latest
