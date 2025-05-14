@@ -1,26 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>مدیریت آی‌پی‌ها</title>
+    <title>پنل ادمین</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-<h2>🛠️ بخش مدیریت</h2>
+<h2>🛠️ پنل مدیریت</h2>
+
 <form method="post">
-  <label>IP:</label>
-  <input name="ip" placeholder="172.35.10.X" required>
-  <label>اینترنت:</label>
-  <select name="route">
-    <option value="irancell">ایرانسل</option>
-    <option value="hamrahaval">همراه اول</option>
-    <option value="adsl">ADSL</option>
-    <option value="anten">آنتن</option>
+  <label>انتخاب اینترنت پیش‌فرض:</label>
+  <select name="default_route">
+    <option value="irancell" {% if current_default == "irancell" %}selected{% endif %}>ایرانسل</option>
+    <option value="hamrahaval" {% if current_default == "hamrahaval" %}selected{% endif %}>همراه اول</option>
+    <option value="adsl" {% if current_default == "adsl" %}selected{% endif %}>ADSL</option>
+    <option value="anten" {% if current_default == "anten" %}selected{% endif %}>آنتن</option>
   </select>
-  <input name="pw" type="password" placeholder="رمز عبور" required>
   <input type="submit" value="اعمال">
 </form>
-{% if message %}
+
 <p>{{ message }}</p>
-{% endif %}
+<p><a href="/logout">🚪 خروج</a></p>
 </body>
 </html>
