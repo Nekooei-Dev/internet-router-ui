@@ -1,0 +1,12 @@
+body {
+    font-family: sans-serif;
+    margin: 40px;
+}
+form {
+    margin-bottom: 20px;
+}
+footer {
+    margin-top: 50px;
+    font-size: 12px;
+    color: gray;
+}
