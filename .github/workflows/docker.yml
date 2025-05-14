@@ -33,7 +33,7 @@ jobs:
       # 4. Build Docker image
       - name: Build Docker image
         run: |
-          docker buildx build --platform linux/amd64,linux/arm64 -t your-username/your-repo-name:latest .
+          docker buildx build --platform linux/amd64,linux/arm64 -t Nekooei-Dev/internet-router-ui:latest .
 
       # 5. Log in to Docker Hub
       - name: Log in to Docker Hub
@@ -43,7 +43,7 @@ jobs:
       # 6. Push Docker image to Docker Hub
       - name: Push Docker image to Docker Hub
         run: |
-          docker push your-username/your-repo-name:latest
+          docker push Nekooei-Dev/internet-router-ui:latest
 
       # 7. Log in to GitHub Container Registry
       - name: Log in to GitHub Container Registry
@@ -52,5 +52,5 @@ jobs:
       # 8. Push Docker image to GitHub Container Registry
       - name: Push Docker image to GitHub Container Registry
         run: |
-          docker tag your-username/your-repo-name:latest ghcr.io/your-username/your-repo-name:latest
-          docker push ghcr.io/your-username/your-repo-name:latest
+          docker tag Nekooei-Dev/internet-router-ui:latest ghcr.io/Nekooei-Dev/internet-router-ui:latest
+          docker push ghcr.io/Nekooei-Dev/internet-router-ui:latest
