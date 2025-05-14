@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>مدیریت آی‌پی‌ها</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<h2>🛠️ بخش مدیریت</h2>
+<form method="post">
+  <label>IP:</label>
+  <input name="ip" placeholder="172.35.10.X" required>
+  <label>اینترنت:</label>
+  <select name="route">
+    <option value="irancell">ایرانسل</option>
+    <option value="hamrahaval">همراه اول</option>
+    <option value="adsl">ADSL</option>
+    <option value="anten">آنتن</option>
+  </select>
+  <input name="pw" type="password" placeholder="رمز عبور" required>
+  <input type="submit" value="اعمال">
+</form>
+{% if message %}
+<p>{{ message }}</p>
+{% endif %}
+</body>
+</html>
