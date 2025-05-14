@@ -4,6 +4,7 @@ import os
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "supersecret")
 
+
 # متغیرهای محیطی
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 ADMIN_PASS = os.environ.get("ADMIN_PASS", "admin123")
