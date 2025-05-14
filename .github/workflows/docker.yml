@@ -5,8 +5,8 @@ on:
     branches:
       - main
 
-permissions: 
-  write-all: true
+permissions:
+  packages: write  # دسترسی برای نوشتن در GitHub Container Registry
 
 jobs:
   build:
@@ -32,8 +32,4 @@ jobs:
           IMAGE_NAME_LOWER=$(echo $IMAGE_NAME | tr '[:upper:]' '[:lower:]')
           docker build -t $IMAGE_NAME_LOWER:latest .
 
-      - name: Push Docker Image
-        run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/internet-router-ui
-          IMAGE_NAME_LOWER=$(echo $IMAGE_NAME | tr '[:upper:]' '[:lower:]')
-          docker push $IMAGE_NAME_LOWER:latest
+      - name: Push D
