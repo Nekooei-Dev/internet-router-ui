@@ -1,16 +1,15 @@
-<!doctype html>
-<html lang="fa">
-<head>
-  <meta charset="utf-8">
-  <title>تغییر اینترنت</title>
-</head>
-<body>
-  <h1>لطفاً اینترنت خود را انتخاب کنید:</h1>
-  <ul>
-    <li><a href="/set?inet=1">Irancell</a></li>
-    <li><a href="/set?inet=2">Hamrah Aval</a></li>
-    <li><a href="/set?inet=3">ADSL</a></li>
-    <li><a href="/set?inet=4">Wireless</a></li>
-  </ul>
-</body>
-</html>
+<h2>اینترنت فعلی شما:</h2>
+{% if current_inet %}
+  <p style="color: green;">{{ interface_marks[current_inet]["name"] }}</p>
+{% else %}
+  <p style="color: red;">نامشخص (هیچ روتی برای شما تنظیم نشده)</p>
+{% endif %}
+
+<h3>انتخاب اینترنت:</h3>
+<ul>
+  {% for key, val in interface_marks.items() %}
+    <li>
+      <a href="/set?inet={{ key }}">{{ val["name"] }}</a>
+    </li>
+  {% endfor %}
+</ul>
