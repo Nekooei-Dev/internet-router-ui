@@ -11,18 +11,11 @@ API_PASS = os.getenv('API_PASS', 'API@Mostafa')
 ALLOWED_NETWORKS = os.getenv('ALLOWED_NETWORKS', '172.30.30.0/24').split(',')
 
 INTERFACE_MARKS = {
-    "1": {"name": "Irancell", "routing_mark": "To-IranCell"},
-    "2": {"name": "Hamrah Aval", "routing_mark": "To-HamrahAval"},
-    "3": {"name": "ADSL", "routing_mark": "To-ADSL"},
-    "4": {"name": "Anten", "routing_mark": "To-Anten"},
+    "1": {"interface": "Bridge- Local LAN", "routing_mark": "To-IranCell"},
+    "2": {"interface": "Bridge- Local LAN", "routing_mark": "To-HamrahAval"},
+    "3": {"interface": "Bridge- Local LAN", "routing_mark": "To-ADSL"},
+    "4": {"interface": "Bridge- Local LAN", "routing_mark": "To-Anten"},
 }
-
-def get_api_connection():
-    try:
-        api = RouterOsApiPool(API_HOST, username=API_USER, password=API_PASS, plaintext_login=True)
-        return api, api.get_api()
-    except Exception as e:
-        return None, None
 
 @app.before_request
 def restrict_to_local():
@@ -34,49 +27,17 @@ def restrict_to_local():
 def index():
     if not session.get('authenticated'):
         return redirect('/login')
-
-    user_ip = request.remote_addr
-    current_inet = None
-
-    try:
-        api_pool, api = get_api_connection()
-        if not api:
-            return "ارتباط با MikroTik برقرار نشد", 500
-
-        mangles = api.get_resource('/ip/firewall/mangle').get()
-        for m in mangles:
-            if m.get('src-address') == user_ip and m.get('action') == 'mark-routing':
-                current_inet = next((key for key, val in INTERFACE_MARKS.items() if val["routing_mark"] == m.get('new-routing-mark')), None)
-                break
-
-        api_pool.disconnect()
-    except Exception as e:
-        return f"خطا در دریافت وضعیت اینترنت: {str(e)}", 500
-
-    return render_template('index.html', current_inet=current_inet, interface_marks=INTERFACE_MARKS)
+    return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    api_ok = False
-    try:
-        api_pool, api = get_api_connection()
-        if api:
-            api_pool.disconnect()
-            api_ok = True
-    except:
-        api_ok = False
-
     if request.method == 'POST':
-        if not api_ok:
-            return "عدم دسترسی به MikroTik. لطفاً بررسی شود.", 500
-
         if request.form.get('password') == os.getenv('WEB_PASSWORD', '123456'):
             session['authenticated'] = True
             return redirect('/')
         else:
             return "رمز عبور اشتباه است"
-
-    return render_template('login.html', api_ok=api_ok)
+    return render_template('login.html')
 
 @app.route('/set')
 def set_internet():
@@ -90,18 +51,17 @@ def set_internet():
     user_ip = request.remote_addr
 
     try:
-        api_pool, api = get_api_connection()
-        if not api:
-            return "عدم اتصال به MikroTik", 500
+        api_pool = RouterOsApiPool(API_HOST, username=API_USER, password=API_PASS)
+        api = api_pool.get_api()
 
         mangles = api.get_resource('/ip/firewall/mangle')
 
-        # Remove previous rules
+        # حذف قوانین قبلی برای این IP
         for m in mangles.get():
             if m.get('comment') == f"Internet Switcher {user_ip}":
                 mangles.remove(id=m['.id'])
 
-        # Add rule for current user IP
+        # افزودن قانون جدید
         mangles.add({
             'chain': 'prerouting',
             'src-address': user_ip,
@@ -116,57 +76,6 @@ def set_internet():
 
     except Exception as e:
         return f"خطا در تغییر اینترنت: {str(e)}", 500
-
-@app.route('/debug')
-def debug():
-    if not session.get('authenticated'):
-        return redirect('/login')
-
-    try:
-        api_pool, api = get_api_connection()
-        if not api:
-            return "اتصال به MikroTik برقرار نشد", 500
-
-        mangles = api.get_resource('/ip/firewall/mangle').get()
-        user_rules = []
-
-        for m in mangles:
-            if m.get('comment', '').startswith("Internet Switcher"):
-                ip = m.get('src-address')
-                mark = m.get('new-routing-mark')
-                inet_name = next((val["name"] for key, val in INTERFACE_MARKS.items() if val["routing_mark"] == mark), "نامشخص")
-                user_rules.append({
-                    "id": m[".id"],
-                    "ip": ip,
-                    "inet": inet_name,
-                    "routing_mark": mark
-                })
-
-        api_pool.disconnect()
-        return render_template('debug.html', user_rules=user_rules)
-
-    except Exception as e:
-        return f"خطا در بارگذاری اطلاعات: {str(e)}", 500
-
-@app.route('/debug/delete/<rule_id>')
-def delete_rule(rule_id):
-    if not session.get('authenticated'):
-        return redirect('/login')
-
-    try:
-        api_pool, api = get_api_connection()
-        if not api:
-            return "اتصال به MikroTik برقرار نشد", 500
-
-        mangles = api.get_resource('/ip/firewall/mangle')
-        mangles.remove(id=rule_id)
-
-        api_pool.disconnect()
-        return redirect('/debug')
-
-    except Exception as e:
-        return f"خطا در حذف قانون: {str(e)}", 500
-
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.getenv('WEB_PORT', '5000')))
