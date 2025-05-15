@@ -1,29 +1,11 @@
-# ===== Stage 1: Build Frontend on amd64 =====
-FROM node:18-alpine as frontend_builder
+FROM python:3.10-slim
 
 WORKDIR /app
 
-COPY frontend/package*.json ./
-RUN npm install
+COPY . /app
 
-COPY frontend/ .
-
-RUN npm run build
-
-# ===== Stage 2: Backend + Serve frontend =====
-FROM python:3.11-slim as backend
-
-WORKDIR /app
-
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY backend/ .
-
-COPY --from=frontend_builder /app/dist ./static
-
-ENV PYTHONUNBUFFERED=1
+RUN pip install flask routeros-api python-dotenv
 
 EXPOSE 80
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["python", "app.py"]
