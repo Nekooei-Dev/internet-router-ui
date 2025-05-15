@@ -1,14 +1,17 @@
 import os
+import ssl
 from flask import Flask, render_template, request, redirect, session
-from routeros_api import RouterOsApiPool
+from librouteros import connect
+from librouteros.login import plain
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
+# خواندن متغیرهای محیطی با مقدار پیش‌فرض
 API_HOST = os.getenv('API_HOST', '172.30.30.254')
 API_USER = os.getenv('API_USER', 'API')
 API_PASS = os.getenv('API_PASS', 'API')
-API_PORT = int(os.getenv('API_PORT', '8728'))
+API_PORT = int(os.getenv('API_PORT', '8729'))  # پورت پیش‌فرض برای SSL
 
 INTERFACE_MARKS = {
     "1": {"interface": "Bridge- Local LAN", "routing_mark": "To-IranCell"},
@@ -16,6 +19,19 @@ INTERFACE_MARKS = {
     "3": {"interface": "Bridge- Local LAN", "routing_mark": "To-ADSL"},
     "4": {"interface": "Bridge- Local LAN", "routing_mark": "To-Anten"},
 }
+
+def get_api_connection():
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.set_ciphers('ADH:@SECLEVEL=0')
+    return connect(
+        host=API_HOST,
+        username=API_USER,
+        password=API_PASS,
+        port=API_PORT,
+        ssl_wrapper=ctx.wrap_socket,
+        login_method=plain
+    )
 
 @app.route('/')
 def index():
@@ -43,15 +59,9 @@ def check_api():
     if not session.get('authenticated'):
         return redirect('/login')
     try:
-        api_pool = RouterOsApiPool(
-            API_HOST,
-            username=API_USER,
-            password=API_PASS,
-            port=API_PORT,
-            plaintext_login=True
-        )
-        api = api_pool.get_api()
-        api_pool.disconnect()
+        api = get_api_connection()
+        # تست اتصال با دریافت لیستی از اینترفیس‌ها
+        interfaces = list(api.path('interface'))
         status = "اتصال به MikroTik برقرار است."
     except Exception as e:
         status = f"خطا در اتصال به MikroTik: {str(e)}"
@@ -63,21 +73,13 @@ def user_status():
         return redirect('/login')
     user_ip = request.remote_addr
     try:
-        api_pool = RouterOsApiPool(
-            API_HOST,
-            username=API_USER,
-            password=API_PASS,
-            port=API_PORT,
-            plaintext_login=True
-        )
-        api = api_pool.get_api()
-        mangles = api.get_resource('/ip/firewall/mangle')
+        api = get_api_connection()
+        mangles = api.path('ip', 'firewall', 'mangle')
         current_rule = None
-        for m in mangles.get():
+        for m in mangles:
             if m.get('comment') == f"Internet Switcher {user_ip}":
                 current_rule = m
                 break
-        api_pool.disconnect()
         if current_rule:
             routing_mark = current_rule.get('new-routing-mark', 'نامشخص')
         else:
@@ -98,29 +100,21 @@ def change_internet():
             message = "اینترنت نامعتبر است"
         else:
             try:
-                api_pool = RouterOsApiPool(
-                    API_HOST,
-                    username=API_USER,
-                    password=API_PASS,
-                    port=API_PORT,
-                    plaintext_login=True
-                )
-                api = api_pool.get_api()
-                mangles = api.get_resource('/ip/firewall/mangle')
-                # حذف قانون قبلی برای کاربر
-                for m in mangles.get():
+                api = get_api_connection()
+                mangles = api.path('ip', 'firewall', 'mangle')
+                # حذف قوانین قبلی کاربر
+                for m in mangles:
                     if m.get('comment') == f"Internet Switcher {user_ip}":
-                        mangles.remove(id=m['.id'])
-                # اضافه کردن قانون جدید (پارامترها در قالب یک دیکشنری)
-                mangles.add({
-                    'chain': 'prerouting',
-                    'src-address': user_ip,
-                    'action': 'mark-routing',
-                    'new-routing-mark': INTERFACE_MARKS[inet]['routing_mark'],
-                    'passthrough': 'yes',
-                    'comment': f"Internet Switcher {user_ip}"
-                })
-                api_pool.disconnect()
+                        mangles.remove(m['.id'])
+                # اضافه کردن قانون جدید
+                mangles.add(
+                    chain='prerouting',
+                    src_address=user_ip,
+                    action='mark-routing',
+                    new_routing_mark=INTERFACE_MARKS[inet]['routing_mark'],
+                    passthrough='yes',
+                    comment=f"Internet Switcher {user_ip}"
+                )
                 message = "اینترنت شما با موفقیت تغییر یافت"
             except Exception as e:
                 message = f"خطا در تغییر اینترنت: {str(e)}"
