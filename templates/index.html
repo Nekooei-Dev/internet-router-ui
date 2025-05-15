@@ -1,15 +1,17 @@
-<h2>اینترنت فعلی شما:</h2>
-{% if current_inet %}
-  <p style="color: green;">{{ interface_marks[current_inet]["name"] }}</p>
-{% else %}
-  <p style="color: red;">نامشخص (هیچ روتی برای شما تنظیم نشده)</p>
-{% endif %}
-
-<h3>انتخاب اینترنت:</h3>
-<ul>
-  {% for key, val in interface_marks.items() %}
-    <li>
-      <a href="/set?inet={{ key }}">{{ val["name"] }}</a>
-    </li>
-  {% endfor %}
-</ul>
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>صفحه اصلی</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-5">
+    <h1 class="mb-4">مدیریت اینترنت</h1>
+    <div class="d-grid gap-3">
+        <a href="/check_api" class="btn btn-primary">بررسی اتصال به MikroTik API</a>
+        <a href="/user_status" class="btn btn-secondary">وضعیت اینترنت من</a>
+        <a href="/change_internet" class="btn btn-success">تغییر اینترنت</a>
+        <a href="/logout" class="btn btn-danger">خروج</a>
+    </div>
+</body>
+</html>
