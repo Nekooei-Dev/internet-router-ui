@@ -3,25 +3,22 @@ name: Build and Push Docker Image
 on:
   push:
     branches:
-      - main  # وقتی شما به برنچ main تغییرات ارسال می‌کنید این Workflow اجرا خواهد شد.
+      - main
 
 permissions:
-  packages: write  # دسترسی برای نوشتن به GitHub Container Registry
+  packages: write
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # سیستم عامل اجرای job به صورت Ubuntu
+    runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repository
       - name: Checkout repository
-        uses: actions/checkout@v3  # این اکشن برای چک‌اوت کد از گیت است
+        uses: actions/checkout@v3
 
-      # 2. Set up Docker Buildx (برای ساخت ایمیج‌های چند پلتفرمی)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # 3. Cache Docker layers (برای تسریع در زمان ساخت ایمیج‌ها)
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
@@ -30,27 +27,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      # 4. Build Docker image
-      - name: Build Docker image
-        run: |
-          docker buildx build --platform linux/amd64,linux/arm64 -t Nekooei-Dev/internet-router-ui:latest .
-
-      # 5. Log in to Docker Hub
       - name: Log in to Docker Hub
         run: |
-          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # 6. Push Docker image to Docker Hub
-      - name: Push Docker image to Docker Hub
+      - name: Build and push Docker image (Docker Hub)
         run: |
-          docker push Nekooei-Dev/internet-router-ui:latest
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --push \
+            -t Nekooei-Dev/internet-router-ui:latest .
 
-      # 7. Log in to GitHub Container Registry
       - name: Log in to GitHub Container Registry
         run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      # 8. Push Docker image to GitHub Container Registry
       - name: Push Docker image to GitHub Container Registry
         run: |
-          docker tag Nekooei-Dev/internet-router-ui:latest ghcr.io/Nekooei-Dev/internet-router-ui:latest
-          docker push ghcr.io/Nekooei-Dev/internet-router-ui:latest
+          docker
