@@ -1,45 +1,68 @@
-from flask import Flask, request, jsonify
-from mikrotik import set_route_for_ip
-from config import ADMIN_USER, ADMIN_PASS, DEFAULT_ROUTE, SECRET_KEY
-from flask_httpauth import HTTPBasicAuth
-from werkzeug.security import check_password_hash, generate_password_hash
+from flask import Flask, request, jsonify, abort
+from routeros_api import RouterOsApiPool
 import os
+from config import ADMIN_USER, ADMIN_PASS, DEFAULT_ROUTE, SECRET_KEY, APP_PORT
+from functools import wraps
 
 app = Flask(__name__)
-auth = HTTPBasicAuth()
 
-# لیست کاربران برای احراز هویت
-users = {
-    ADMIN_USER: generate_password_hash(ADMIN_PASS)
-}
+# Basic Auth decorator
+def check_auth(username, password):
+    return username == ADMIN_USER and password == ADMIN_PASS
 
-# بررسی صحت رمز عبور
-@auth.verify_password
-def verify_password(username, password):
-    if username in users and check_password_hash(users.get(username), password):
-        return username
+def authenticate():
+    abort(401, description="Authentication required")
 
-# تغییر مسیر اینترنت برای آی‌پی مشخص
-@app.route("/api/route", methods=["POST"])
-def change_user_route():
-    data = request.get_json()
-    user_ip = request.remote_addr
-    internet = data.get("internet")
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
 
-    if internet not in ["irancell", "hamrahaval", "adsl", "anten"]:
-        return jsonify({"error": "Invalid choice"}), 400
+# Connect to MikroTik router (Local IP assumed)
+def connect_to_mikrotik():
+    pool = RouterOsApiPool('172.30.30.254', username='admin', password='admin_password', plaintext_login=True)
+    api = pool.get_api()
+    return pool, api
 
-    success = set_route_for_ip(user_ip, internet)
-    return jsonify({"status": "ok" if success else "fail"})
+@app.route('/change-route', methods=['POST'])
+@requires_auth
+def change_route():
+    data = request.json
+    if 'route' not in data:
+        return jsonify({'error': 'route field missing'}), 400
+    
+    route_name = data['route']
+    if route_name not in ['irancell', 'hamrahaval', 'adsl', 'asiatech']:
+        return jsonify({'error': 'invalid route'}), 400
 
-# تغییر مسیر پیش‌فرض
-@app.route("/api/admin/default", methods=["POST"])
-@auth.login_required
-def change_default_route():
-    data = request.get_json()
-    default = data.get("default")
+    pool, api = connect_to_mikrotik()
+    ip_route = api.get_resource('/ip/route')
 
-    if default in ["irancell", "hamrahaval", "adsl", "anten"]:
-        os.environ["DEFAULT_ROUTE"] = default
-        return jsonify({"default": default})
-    return jsonify({"error": "Invalid route"}), 400
+    # مثال: تغییر روت پیشفرض به روتر جدید
+    try:
+        # Disable all default routes first
+        default_routes = ip_route.get(dst='0.0.0.0/0')
+        for r in default_routes:
+            ip_route.set(id=r['id'], disabled='yes')
+        
+        # Enable only selected route
+        routes = ip_route.get(comment__contains=route_name)
+        for r in routes:
+            ip_route.set(id=r['id'], disabled='no')
+
+        pool.disconnect()
+        return jsonify({'status': f'Default route changed to {route_name}'})
+    except Exception as e:
+        pool.disconnect()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/')
+def index():
+    return "Internet Router UI Backend Running"
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=APP_PORT)
