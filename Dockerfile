@@ -1,18 +1,20 @@
-# استفاده از ایمیج رسمی پایتون
+# پایه Python 3.11
 FROM python:3.11-slim
 
-# تنظیم دایرکتوری کاری داخل کانتینر
+# تنظیم دایرکتوری کاری
 WORKDIR /app
 
-# کپی فایل‌های مورد نیاز
+# کپی کردن فایل requirements
 COPY requirements.txt .
-COPY . .
 
-# نصب پکیج‌ها
+# نصب وابستگی‌ها
 RUN pip install --no-cache-dir -r requirements.txt
 
-# اطمینان از فعال بودن پورت Flask
-EXPOSE 5000
+# کپی کردن کل برنامه
+COPY . .
+
+# پورت پیش‌فرض از ENV گرفته می‌شود (5000)
+ENV FLASK_APP=app.py
 
 # اجرای برنامه
-CMD ["python", "app.py"]
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
