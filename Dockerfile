@@ -1,23 +1,17 @@
-# پایه Python آرم (alpine برای حجم کم)
-FROM python:3.11-alpine
+# مرحله اول: ساخت فرانت‌اند با Vite
+FROM node:18-alpine AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ .
+RUN npm run build
 
-# نصب busybox برای سرو فایل استاتیک frontend
-RUN apk add --no-cache busybox
-
+# مرحله دوم: اجرای بک‌اند FastAPI و سرو فرانت‌اند
+FROM python:3.11-slim
 WORKDIR /app
-
-# کپی بک‌اند و فایل requirements
-COPY backend/ ./backend/
-COPY backend/requirements.txt ./backend/requirements.txt
-
-# نصب پایتون دپندنسی‌ها
-RUN pip install --no-cache-dir -r backend/requirements.txt
-
-# کپی فرانت‌اند بیلد شده
-COPY frontend/dist/ ./frontend/
-
-# expose پورت اپلیکیشن
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/ .
+COPY --from=frontend-builder /app/frontend/dist ./static
 EXPOSE 80
-
-# اجرای همزمان سرو فایل‌های استاتیک فرانت‌اند و سرور Python
-CMD sh -c "httpd -f -p 80 -h /app/frontend & python3 /app/backend/app.py"
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
