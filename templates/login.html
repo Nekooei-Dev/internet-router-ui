@@ -1,3 +1,24 @@
-{% if not api_ok %}
-  <p style="color: red;">ارتباط با MikroTik برقرار نیست. لطفاً بررسی شود.</p>
-{% endif %}
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>ورود</title>
+</head>
+<body>
+    <h2>ورود</h2>
+    <form method="post">
+        <label>رمز عبور:</label>
+        <input type="password" name="password" required>
+        <button type="submit">ورود</button>
+    </form>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+</body>
+</html>
