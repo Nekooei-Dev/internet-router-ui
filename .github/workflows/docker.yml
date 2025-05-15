@@ -6,22 +6,19 @@ on:
       - main
 
 permissions:
-  packages: write  # برای GitHub Container Registry
+  packages: write
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. چک‌اوت ریپو
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. فعال‌سازی Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # 3. کش برای Buildx
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
@@ -30,25 +27,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      # 4. لاگین به Docker Hub
       - name: Log in to Docker Hub
-        run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # 5. بیلد و پوش به Docker Hub
-      - name: Build and push to Docker Hub
-        run: |
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --push \
-            -t nekooeidev/internet-router-ui:latest .
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: nekooeidev/internet-router-ui:latest
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
 
-      # 6. لاگین به GitHub Container Registry
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      # 7. پوش به GitHub Container Registry
-      - name: Push Docker image to GHCR
+      - name: Tag and push to GHCR
         run: |
           docker pull nekooeidev/internet-router-ui:latest
           docker tag nekooeidev/internet-router-ui:latest ghcr.io/nekooei-dev/internet-router-ui:latest
