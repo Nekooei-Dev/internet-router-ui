@@ -6,10 +6,10 @@ app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
 # خواندن متغیرهای محیطی با مقدار پیش‌فرض
-API_HOST = os.getenv('MIKROTIK_HOST', '172.30.30.254')
-API_USER = os.getenv('MIKROTIK_USER', 'API')
-API_PASS = os.getenv('MIKROTIK_PASS', 'API')
-API_PORT = int(os.getenv('MIKROTIK_PORT', '8728'))
+API_HOST = os.getenv('API_HOST', '172.30.30.254')
+API_USER = os.getenv('API_USER', 'API')
+API_PASS = os.getenv('API_PASS', 'API')
+API_PORT = int(os.getenv('API_PORT', '8728'))
 
 INTERFACE_MARKS = {
     "1": {"interface": "Bridge- Local LAN", "routing_mark": "To-IranCell"},
