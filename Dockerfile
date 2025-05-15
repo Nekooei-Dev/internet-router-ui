@@ -1,11 +1,19 @@
-FROM python:3.10-slim
+# syntax=docker/dockerfile:experimental
+FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY . /app
+# نصب dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install flask routeros-api python-dotenv
+# کپی کردن همه فایل‌ها (شامل app.py، templates، .env و ... )
+COPY . .
 
-EXPOSE 80
+ENV FLASK_APP=app.py
+ENV FLASK_RUN_HOST=0.0.0.0
+ENV FLASK_ENV=production
 
-CMD ["python", "app.py"]
+EXPOSE 5000
+
+CMD ["flask", "run"]
