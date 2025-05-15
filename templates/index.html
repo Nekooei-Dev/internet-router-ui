@@ -1,23 +1,27 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>داشبورد</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-<style>
-  body { background: #f5f5f5; }
-  .container { margin-top: 50px; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>صفحه اصلی</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
 </head>
-<body>
-<div class="container text-center">
-  <h1 class="mb-4">سلام! به داشبورد خوش آمدید.</h1>
-  <div class="d-grid gap-3 col-6 mx-auto">
-    <a href="/check_api" class="btn btn-outline-primary btn-lg">چک کردن API میکروتیک</a>
-    <a href="/user_status" class="btn btn-outline-success btn-lg">مشاهده وضعیت اینترنت</a>
-    <a href="/change_internet" class="btn btn-outline-warning btn-lg">تغییر اینترنت</a>
-    <a href="/logout" class="btn btn-outline-danger btn-lg">خروج</a>
+<body class="bg-light">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Router UI</a>
+    <div class="d-flex">
+      <a href="/logout" class="btn btn-outline-light">خروج</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <h1 class="mb-4">به داشبورد خوش آمدید</h1>
+  <div class="list-group">
+    <a href="/check_api" class="list-group-item list-group-item-action">بررسی اتصال MikroTik</a>
+    <a href="/user_status" class="list-group-item list-group-item-action">وضعیت اینترنت شما</a>
+    <a href="/change_internet" class="list-group-item list-group-item-action">تغییر اینترنت</a>
   </div>
 </div>
 </body>
