@@ -1,17 +1,23 @@
 import os
-import ssl
-from flask import Flask, render_template, request, redirect, session
-from librouteros import connect
-from librouteros.login import plain
+from flask import Flask, render_template, request, redirect, session, abort
+from routeros_api import RouterOsApiPool
+import ipaddress
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
 
-# خواندن متغیرهای محیطی با مقدار پیش‌فرض
+# دریافت تنظیمات از ENV با مقدار پیش‌فرض
 API_HOST = os.getenv('API_HOST', '172.30.30.254')
 API_USER = os.getenv('API_USER', 'API')
 API_PASS = os.getenv('API_PASS', 'API')
-API_PORT = int(os.getenv('API_PORT', '8729'))  # پورت پیش‌فرض برای SSL
+API_PORT = int(os.getenv('API_PORT', '8728'))
+API_USE_SSL = os.getenv('API_USE_SSL', 'false').lower() == 'true'  # اگه میخوای ssl بزنی true بذار
+
+WEB_PASSWORD = os.getenv('WEB_PASSWORD', '123456')
+WEB_PORT = int(os.getenv('WEB_PORT', '5000'))
+SECRET_KEY = os.getenv('SECRET_KEY', 'supersecretkey')
+ALLOWED_NETWORKS = os.getenv('ALLOWED_NETWORKS', '127.0.0.1,::1')  # شبکه های مجاز به وب
+
+app.secret_key = SECRET_KEY
 
 INTERFACE_MARKS = {
     "1": {"interface": "Bridge- Local LAN", "routing_mark": "To-IranCell"},
@@ -20,18 +26,21 @@ INTERFACE_MARKS = {
     "4": {"interface": "Bridge- Local LAN", "routing_mark": "To-Anten"},
 }
 
-def get_api_connection():
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.set_ciphers('ADH:@SECLEVEL=0')
-    return connect(
-        host=API_HOST,
-        username=API_USER,
-        password=API_PASS,
-        port=API_PORT,
-        ssl_wrapper=ctx.wrap_socket,
-        login_method=plain
-    )
+def ip_allowed(ip):
+    allowed = [net.strip() for net in ALLOWED_NETWORKS.split(',')]
+    for net in allowed:
+        try:
+            if ipaddress.ip_address(ip) in ipaddress.ip_network(net, strict=False):
+                return True
+        except ValueError:
+            continue
+    return False
+
+@app.before_request
+def limit_remote_addr():
+    user_ip = request.remote_addr
+    if not ip_allowed(user_ip) and request.endpoint != 'login':
+        abort(403, description="دسترسی از این شبکه مجاز نیست.")
 
 @app.route('/')
 def index():
@@ -42,7 +51,7 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        if request.form.get('password') == '123456':
+        if request.form.get('password') == WEB_PASSWORD:
             session['authenticated'] = True
             return redirect('/')
         else:
@@ -54,14 +63,25 @@ def logout():
     session.clear()
     return redirect('/login')
 
+def get_api_pool():
+    return RouterOsApiPool(
+        API_HOST,
+        username=API_USER,
+        password=API_PASS,
+        port=API_PORT,
+        plaintext_login=not API_USE_SSL,
+        use_ssl=API_USE_SSL,
+        ssl_verify=False  # در صورت نیاز ssl بدون تایید سرور
+    )
+
 @app.route('/check_api')
 def check_api():
     if not session.get('authenticated'):
         return redirect('/login')
     try:
-        api = get_api_connection()
-        # تست اتصال با دریافت لیستی از اینترفیس‌ها
-        interfaces = list(api.path('interface'))
+        api_pool = get_api_pool()
+        api = api_pool.get_api()
+        api_pool.disconnect()
         status = "اتصال به MikroTik برقرار است."
     except Exception as e:
         status = f"خطا در اتصال به MikroTik: {str(e)}"
@@ -73,13 +93,15 @@ def user_status():
         return redirect('/login')
     user_ip = request.remote_addr
     try:
-        api = get_api_connection()
-        mangles = api.path('ip', 'firewall', 'mangle')
+        api_pool = get_api_pool()
+        api = api_pool.get_api()
+        mangles = api.get_resource('/ip/firewall/mangle')
         current_rule = None
-        for m in mangles:
+        for m in mangles.get():
             if m.get('comment') == f"Internet Switcher {user_ip}":
                 current_rule = m
                 break
+        api_pool.disconnect()
         if current_rule:
             routing_mark = current_rule.get('new-routing-mark', 'نامشخص')
         else:
@@ -100,25 +122,27 @@ def change_internet():
             message = "اینترنت نامعتبر است"
         else:
             try:
-                api = get_api_connection()
-                mangles = api.path('ip', 'firewall', 'mangle')
+                api_pool = get_api_pool()
+                api = api_pool.get_api()
+                mangles = api.get_resource('/ip/firewall/mangle')
                 # حذف قوانین قبلی کاربر
-                for m in mangles:
+                for m in mangles.get():
                     if m.get('comment') == f"Internet Switcher {user_ip}":
-                        mangles.remove(m['.id'])
+                        mangles.remove(id=m['.id'])
                 # اضافه کردن قانون جدید
-                mangles.add(
-                    chain='prerouting',
-                    src_address=user_ip,
-                    action='mark-routing',
-                    new_routing_mark=INTERFACE_MARKS[inet]['routing_mark'],
-                    passthrough='yes',
-                    comment=f"Internet Switcher {user_ip}"
-                )
+                mangles.add({
+                    'chain': 'prerouting',
+                    'src-address': user_ip,
+                    'action': 'mark-routing',
+                    'new-routing-mark': INTERFACE_MARKS[inet]['routing_mark'],
+                    'passthrough': 'yes',
+                    'comment': f"Internet Switcher {user_ip}"
+                })
+                api_pool.disconnect()
                 message = "اینترنت شما با موفقیت تغییر یافت"
             except Exception as e:
                 message = f"خطا در تغییر اینترنت: {str(e)}"
     return render_template('change_internet.html', message=message, interfaces=INTERFACE_MARKS)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=WEB_PORT)
