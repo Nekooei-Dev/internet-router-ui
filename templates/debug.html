@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>صفحه دیباگ کاربران</title>
+</head>
+<body>
+    <h1>لیست کاربران متصل و اینترنت انتخابی</h1>
+    <table border="1">
+        <tr>
+            <th>آی‌پی</th>
+            <th>اینترنت</th>
+            <th>Routing Mark</th>
+            <th>عملیات</th>
+        </tr>
+        {% for rule in user_rules %}
+        <tr>
+            <td>{{ rule.ip }}</td>
+            <td>{{ rule.inet }}</td>
+            <td>{{ rule.routing_mark }}</td>
+            <td><a href="/debug/delete/{{ rule.id }}" onclick="return confirm('آیا مطمئن هستید؟')">🗑 حذف</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <br><a href="/">بازگشت به خانه</a>
+</body>
+</html>
