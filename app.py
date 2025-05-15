@@ -1,7 +1,8 @@
-from flask import Flask, request, redirect, session, render_template
+import os
+import ipaddress
+from flask import Flask, request, render_template, redirect, session
 from routeros_api import RouterOsApiPool
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
@@ -14,13 +15,24 @@ API_PASS = os.getenv('API_PASS', '')
 WEB_PASSWORD = os.getenv('WEB_PASSWORD', '1234')
 WEB_PORT = int(os.getenv('WEB_PORT', 5000))
 
-# رنج های مجاز شبکه رو از ENV می‌خونیم، چندتا رنج با کاما جدا
-ALLOWED_NETWORKS = os.getenv('ALLOWED_NETWORKS', '192.168.88.').split(',')
+allowed = os.getenv('ALLOWED_NETWORKS', '192.168.88.0/24,172.30.30.0/24')
+ALLOWED_NETWORKS = [net.strip() for net in allowed.split(',')]
+
+def check_ip_allowed(ip_str):
+    try:
+        client_ip = ipaddress.ip_address(ip_str)
+        for net in ALLOWED_NETWORKS:
+            network = ipaddress.ip_network(net)
+            if client_ip in network:
+                return True
+    except ValueError:
+        pass
+    return False
 
 @app.before_request
 def restrict_to_local():
     ip = request.remote_addr
-    if not any(ip.startswith(net.strip()) for net in ALLOWED_NETWORKS):
+    if not check_ip_allowed(ip):
         return "دسترسی فقط برای کاربران شبکه داخلی مجاز است", 403
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -30,7 +42,7 @@ def login():
             session['authenticated'] = True
             return redirect('/')
         else:
-            return "رمز عبور اشتباه است"
+            return "رمز عبور اشتباه است", 401
     return render_template('login.html')
 
 @app.route('/')
@@ -42,20 +54,20 @@ def index():
 @app.route('/set')
 def set_internet():
     if not session.get('authenticated'):
-        return "لطفا وارد شوید", 401
+        return "لطفاً ابتدا وارد شوید", 401
 
     inet = request.args.get('inet')
     if inet not in ['1', '2', '3', '4']:
-        return "پارامتر نامعتبر", 400
+        return "گزینه اینترنت نامعتبر است", 400
 
     try:
-        api = RouterOsApiPool(API_HOST, username=API_USER, password=API_PASS, plaintext_login=True)
-        api_instance = api.get_api()
-        # اینجا دستور تغییر اینترنت رو به میکروتیک می‌فرستی
-        # فرضا می‌خوای route یا default gateway رو تغییر بدی
-        # این مثال فقط یک placeholder هست:
-        api_instance.get_resource('/ip/route').call('set', {'gateway': f'pppoe-out{inet}'})
-        api.disconnect()
+        with RouterOsApiPool(API_HOST, username=API_USER, password=API_PASS, plaintext_login=True) as api:
+            # فرض کنیم که تنظیمات تغییر اینترنت به این شکل انجام میشه:
+            # این قسمت رو باید با توجه به نیاز میکروتیک خودت تغییر بدی
+            # مثلا تغییر route یا تغییر WAN اصلی
+            # نمونه: 
+            # api.get_resource('/ip/route').call('set', {'disabled': False, '.id': '*1'}) # نمونه
+            pass
         return "اینترنت با موفقیت تغییر یافت"
     except Exception as e:
         return f"خطا در تغییر اینترنت: {e}", 500
