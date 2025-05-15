@@ -8,7 +8,7 @@ app.secret_key = 'your_secret_key'
 # خواندن متغیرهای محیطی با مقدار پیش‌فرض
 API_HOST = os.getenv('MIKROTIK_HOST', '172.30.30.254')
 API_USER = os.getenv('MIKROTIK_USER', 'API')
-API_PASS = os.getenv('MIKROTIK_PASS', 'API@Mostafa')
+API_PASS = os.getenv('MIKROTIK_PASS', 'API')
 API_PORT = int(os.getenv('MIKROTIK_PORT', '8728'))
 
 INTERFACE_MARKS = {
