@@ -1,16 +1,14 @@
+
 from flask import Flask, render_template, request, redirect, session
 from routeros_api import RouterOsApiPool
-import os
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # مقدار دلخواه برای کلید مخفی
+app.secret_key = 'your_secret_key'
 
-# تنظیمات MikroTik
 API_HOST = '172.30.30.254'
 API_USER = 'API'
 API_PASS = 'API@Mostafa'
 
-# قوانین مسیریابی
 INTERFACE_MARKS = {
     "1": {"interface": "Bridge- Local LAN", "routing_mark": "To-IranCell"},
     "2": {"interface": "Bridge- Local LAN", "routing_mark": "To-HamrahAval"},
@@ -90,11 +88,9 @@ def change_internet():
                 api_pool = RouterOsApiPool(API_HOST, username=API_USER, password=API_PASS)
                 api = api_pool.get_api()
                 mangles = api.get_resource('/ip/firewall/mangle')
-                # حذف قوانین قبلی برای این IP
                 for m in mangles.get():
                     if m.get('comment') == f"Internet Switcher {user_ip}":
                         mangles.remove(id=m['.id'])
-                # افزودن قانون جدید
                 mangles.add({
                     'chain': 'prerouting',
                     'src-address': user_ip,
@@ -108,3 +104,6 @@ def change_internet():
             except Exception as e:
                 message = f"خطا در تغییر اینترنت: {str(e)}"
     return render_template('change_internet.html', message=message, interfaces=INTERFACE_MARKS)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
