@@ -1,13 +1,14 @@
+import os
 from flask import Flask, render_template, request, redirect, session
 from routeros_api import RouterOsApiPool
-import os
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
+# خواندن متغیرهای محیطی با مقدار پیش‌فرض
 API_HOST = os.getenv('MIKROTIK_HOST', '172.30.30.254')
 API_USER = os.getenv('MIKROTIK_USER', 'API')
-API_PASS = os.getenv('MIKROTIK_PASS', '1')
+API_PASS = os.getenv('MIKROTIK_PASS', 'API@Mostafa')
 API_PORT = int(os.getenv('MIKROTIK_PORT', '8728'))
 
 INTERFACE_MARKS = {
@@ -43,11 +44,13 @@ def check_api():
     if not session.get('authenticated'):
         return redirect('/login')
     try:
-        api_pool = RouterOsApiPool(API_HOST,
-                                   username=API_USER,
-                                   password=API_PASS,
-                                   port=API_PORT,
-                                   plaintext_login=True)
+        api_pool = RouterOsApiPool(
+            API_HOST,
+            username=API_USER,
+            password=API_PASS,
+            port=API_PORT,
+            plaintext_login=True
+        )
         api = api_pool.get_api()
         api_pool.disconnect()
         status = "اتصال به MikroTik برقرار است."
@@ -61,11 +64,13 @@ def user_status():
         return redirect('/login')
     user_ip = request.remote_addr
     try:
-        api_pool = RouterOsApiPool(API_HOST,
-                                   username=API_USER,
-                                   password=API_PASS,
-                                   port=API_PORT,
-                                   plaintext_login=True)
+        api_pool = RouterOsApiPool(
+            API_HOST,
+            username=API_USER,
+            password=API_PASS,
+            port=API_PORT,
+            plaintext_login=True
+        )
         api = api_pool.get_api()
         mangles = api.get_resource('/ip/firewall/mangle')
         current_rule = None
@@ -94,11 +99,13 @@ def change_internet():
             message = "اینترنت نامعتبر است"
         else:
             try:
-                api_pool = RouterOsApiPool(API_HOST,
-                                           username=API_USER,
-                                           password=API_PASS,
-                                           port=API_PORT,
-                                           plaintext_login=True)
+                api_pool = RouterOsApiPool(
+                    API_HOST,
+                    username=API_USER,
+                    password=API_PASS,
+                    port=API_PORT,
+                    plaintext_login=True
+                )
                 api = api_pool.get_api()
                 mangles = api.get_resource('/ip/firewall/mangle')
                 for m in mangles.get():
