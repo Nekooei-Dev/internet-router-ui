@@ -108,19 +108,21 @@ def change_internet():
                 )
                 api = api_pool.get_api()
                 mangles = api.get_resource('/ip/firewall/mangle')
-                # حذف قانون قبلی برای کاربر
+                
+                # حذف قوانین قبلی کاربر
                 for m in mangles.get():
                     if m.get('comment') == f"Internet Switcher {user_ip}":
-                        mangles.remove(id=m['.id'])
+                        mangles.remove({'id': m['.id']})
+                
                 # اضافه کردن قانون جدید
-                mangles.add(
-                    chain='prerouting',
-                    src_address=user_ip,
-                    action='mark-routing',
-                    new_routing_mark=INTERFACE_MARKS[inet]['routing_mark'],
-                    passthrough='yes',
-                    comment=f"Internet Switcher {user_ip}"
-                )
+                mangles.add({
+                    'chain': 'prerouting',
+                    'src-address': user_ip,
+                    'action': 'mark-routing',
+                    'new-routing-mark': INTERFACE_MARKS[inet]['routing_mark'],
+                    'passthrough': 'yes',
+                    'comment': f"Internet Switcher {user_ip}"
+                })
                 api_pool.disconnect()
                 message = "اینترنت شما با موفقیت تغییر یافت"
             except Exception as e:
