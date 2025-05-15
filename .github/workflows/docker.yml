@@ -1,4 +1,4 @@
-name: Build and Push MikroTik UI (Multi-Arch)
+name: Build and Push MikroTik UI (Single-Arch hap ac3)
 
 on:
   push:
@@ -33,10 +33,10 @@ jobs:
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build and push (multi-arch)
+      - name: Build and push (for hap ac3 only)
         run: |
           docker buildx build \
-            --platform linux/amd64,linux/arm64,linux/arm/v7 \
+            --platform linux/arm/v7 \
             --push \
             -t nekooeidev/internet-router-ui:latest \
             -t ghcr.io/nekooei-dev/internet-router-ui:latest \
