@@ -1,28 +1,8 @@
-<!doctype html>
-<html lang="fa" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>صفحه اصلی</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="/">Router UI</a>
-    <div class="d-flex">
-      <a href="/logout" class="btn btn-outline-light">خروج</a>
-    </div>
-  </div>
-</nav>
-
-<div class="container mt-4">
-  <h1 class="mb-4">به داشبورد خوش آمدید</h1>
-  <div class="list-group">
-    <a href="/check_api" class="list-group-item list-group-item-action">بررسی اتصال MikroTik</a>
-    <a href="/user_status" class="list-group-item list-group-item-action">وضعیت اینترنت شما</a>
-    <a href="/change_internet" class="list-group-item list-group-item-action">تغییر اینترنت</a>
-  </div>
+{% extends "layout.html" %}
+{% block title %}خانه{% endblock %}
+{% block content %}
+<div class="text-center">
+  <h1 class="mb-4">خوش آمدید به مدیریت MikroTik</h1>
+  <p>از منوی بالا می‌توانید عملیات مختلف را انجام دهید.</p>
 </div>
-</body>
-</html>
+{% endblock %}
