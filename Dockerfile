@@ -1,24 +1,24 @@
 # ===== Stage 1: Build Frontend on amd64 =====
-FROM --platform=linux/amd64 node:18-alpine AS frontend-builder
+FROM node:18-alpine as frontend_builder
 WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ .
 RUN npm run build
 
-# ===== Stage 2: Backend + Serve frontend on ARMv7 =====
+# ===== Stage 2: Backend + Serve frontend =====
 FROM python:3.11-slim as backend
 WORKDIR /app
 
-# نصب وابستگی‌های بک‌اند
+# نصب وابستگی‌های backend
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # کپی کد backend
 COPY backend/ .
 
-# کپی خروجی frontend به دایرکتوری static
-COPY --from=frontend-builder /app/dist ./static
+# کپی خروجی frontend
+COPY --from=frontend_builder /app/dist ./static
 
 # بارگزاری ENV در صورت نیاز
 ENV PYTHONUNBUFFERED=1
