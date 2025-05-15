@@ -1,27 +1,11 @@
-# مرحله بیلد برای نصب وابستگی‌ها
-FROM --platform=$BUILDPLATFORM python:3.11-slim as builder
-
-WORKDIR /app
-
-COPY app.py /app/
-COPY templates/ /app/templates/
-
-# نصب کتابخانه‌ها در یک پوشه جدا
-RUN pip install --upgrade pip && \
-    pip install --prefix=/install flask routeros_api
-
-# مرحله دوم - ایمیج نهایی کوچک
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# کپی فایل‌های برنامه
-COPY app.py /app/
-COPY templates/ /app/templates/
+COPY requirements.txt .
 
-# کپی پکیج‌های نصب‌شده از مرحله بیلد
-COPY --from=builder /install /usr/local
+RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 5000
+COPY . .
 
 CMD ["python", "app.py"]
