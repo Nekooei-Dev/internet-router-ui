@@ -108,12 +108,12 @@ def change_internet():
                 )
                 api = api_pool.get_api()
                 mangles = api.get_resource('/ip/firewall/mangle')
-                
+
                 # حذف قوانین قبلی کاربر
                 for m in mangles.get():
                     if m.get('comment') == f"Internet Switcher {user_ip}":
                         mangles.remove({'id': m['.id']})
-                
+
                 # اضافه کردن قانون جدید
                 mangles.add({
                     'chain': 'prerouting',
@@ -123,6 +123,7 @@ def change_internet():
                     'passthrough': 'yes',
                     'comment': f"Internet Switcher {user_ip}"
                 })
+
                 api_pool.disconnect()
                 message = "اینترنت شما با موفقیت تغییر یافت"
             except Exception as e:
