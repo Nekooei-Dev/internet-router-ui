@@ -1,1 +1,2 @@
+Flask==2.3.3
 routeros-api==0.16.0
