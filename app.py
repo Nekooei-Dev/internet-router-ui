@@ -99,8 +99,14 @@ def change_internet():
             message = "اینترنت نامعتبر است"
         else:
             try:
-                api_pool = RouterOsApiPool(API_HOST, username=API_USER, password=API_PASS, port=API_PORT)
-                api = api_pool.get_api()
+            api_pool = RouterOsApiPool(
+            API_HOST,
+            username=API_USER,
+            password=API_PASS,
+            port=API_PORT,
+            plaintext_login=True
+            )
+            api = api_pool.get_api()
                 mangles = api.get_resource('/ip/firewall/mangle')
                 # حذف قانون قبلی برای کاربر
                 for m in mangles.get():
