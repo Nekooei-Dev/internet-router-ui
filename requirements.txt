@@ -1,0 +1,3 @@
+flask
+routeros_api
+python-dotenv
