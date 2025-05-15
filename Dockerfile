@@ -1,23 +1,23 @@
-# Use official Python base image for ARMv7 (alpine for سبک بودن)
+# پایه Python آرم (alpine برای حجم کم)
 FROM python:3.11-alpine
 
-# نصب BusyBox برای سرو فایل استاتیک frontend
+# نصب busybox برای سرو فایل استاتیک frontend
 RUN apk add --no-cache busybox
 
-# Set working directory
 WORKDIR /app
 
-# Copy backend files
+# کپی بک‌اند و فایل requirements
 COPY backend/ ./backend/
+COPY backend/requirements.txt ./backend/requirements.txt
 
-# Copy frontend dist
-COPY frontend/dist/ ./frontend/
-
-# نصب dependencies Python
+# نصب پایتون دپندنسی‌ها
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
-# expose port (مطابق env یا default)
+# کپی فرانت‌اند بیلد شده
+COPY frontend/dist/ ./frontend/
+
+# expose پورت اپلیکیشن
 EXPOSE 80
 
-# Run backend و سرو فایل استاتیک با busybox httpd
+# اجرای همزمان سرو فایل‌های استاتیک فرانت‌اند و سرور Python
 CMD sh -c "httpd -f -p 80 -h /app/frontend & python3 /app/backend/app.py"
