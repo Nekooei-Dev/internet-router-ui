@@ -5,7 +5,6 @@ from routeros_api import RouterOsApiPool
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-# خواندن متغیرهای محیطی با مقدار پیش‌فرض
 API_HOST = os.getenv('API_HOST', '172.30.30.254')
 API_USER = os.getenv('API_USER', 'API')
 API_PASS = os.getenv('API_PASS', 'API')
