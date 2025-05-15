@@ -117,5 +117,56 @@ def set_internet():
     except Exception as e:
         return f"خطا در تغییر اینترنت: {str(e)}", 500
 
+@app.route('/debug')
+def debug():
+    if not session.get('authenticated'):
+        return redirect('/login')
+
+    try:
+        api_pool, api = get_api_connection()
+        if not api:
+            return "اتصال به MikroTik برقرار نشد", 500
+
+        mangles = api.get_resource('/ip/firewall/mangle').get()
+        user_rules = []
+
+        for m in mangles:
+            if m.get('comment', '').startswith("Internet Switcher"):
+                ip = m.get('src-address')
+                mark = m.get('new-routing-mark')
+                inet_name = next((val["name"] for key, val in INTERFACE_MARKS.items() if val["routing_mark"] == mark), "نامشخص")
+                user_rules.append({
+                    "id": m[".id"],
+                    "ip": ip,
+                    "inet": inet_name,
+                    "routing_mark": mark
+                })
+
+        api_pool.disconnect()
+        return render_template('debug.html', user_rules=user_rules)
+
+    except Exception as e:
+        return f"خطا در بارگذاری اطلاعات: {str(e)}", 500
+
+@app.route('/debug/delete/<rule_id>')
+def delete_rule(rule_id):
+    if not session.get('authenticated'):
+        return redirect('/login')
+
+    try:
+        api_pool, api = get_api_connection()
+        if not api:
+            return "اتصال به MikroTik برقرار نشد", 500
+
+        mangles = api.get_resource('/ip/firewall/mangle')
+        mangles.remove(id=rule_id)
+
+        api_pool.disconnect()
+        return redirect('/debug')
+
+    except Exception as e:
+        return f"خطا در حذف قانون: {str(e)}", 500
+
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.getenv('WEB_PORT', '5000')))
