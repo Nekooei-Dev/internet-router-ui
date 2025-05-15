@@ -1,19 +1,19 @@
-# syntax=docker/dockerfile:experimental
+# syntax=docker/dockerfile:1.4
+
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# نصب dependencies
+# نصب وابستگی‌ها
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# کپی کردن همه فایل‌ها (شامل app.py، templates، .env و ... )
+# کپی کل پروژه
 COPY . .
 
-ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_ENV=production
+ENV FLASK_APP=app.py
 
 EXPOSE 5000
 
-CMD ["flask", "run"]
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
