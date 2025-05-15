@@ -1,19 +1,12 @@
-# syntax=docker/dockerfile:1.4
-
-FROM python:3.11-slim
+FROM --platform=$BUILDPLATFORM python:3.11-slim as builder
 
 WORKDIR /app
+COPY . /app
+RUN pip install --no-cache-dir flask routeros_api
 
-# نصب وابستگی‌ها
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# کپی کل پروژه
-COPY . .
-
-ENV FLASK_ENV=production
-ENV FLASK_APP=app.py
+FROM python:3.11-slim
+WORKDIR /app
+COPY --from=builder /app /app
 
 EXPOSE 5000
-
-CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
+CMD ["python", "app.py"]
