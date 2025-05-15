@@ -112,7 +112,7 @@ def change_internet():
                 # حذف قوانین قبلی کاربر
                 for m in mangles.get():
                     if m.get('comment') == f"Internet Switcher {user_ip}":
-                        mangles.remove({'id': m['.id']})
+                        mangles.remove(id=m['.id'])
 
                 # اضافه کردن قانون جدید
                 mangles.add({
