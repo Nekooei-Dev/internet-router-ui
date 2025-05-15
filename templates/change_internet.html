@@ -1,42 +1,22 @@
-<!doctype html>
-<html lang="fa" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>تغییر اینترنت</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="/">Router UI</a>
-    <div class="d-flex">
-      <a href="/logout" class="btn btn-outline-light">خروج</a>
-    </div>
-  </div>
-</nav>
+{% extends "layout.html" %}
+{% block title %}تغییر اینترنت{% endblock %}
+{% block content %}
+<h3>تغییر اینترنت</h3>
 
-<div class="container mt-4" style="max-width:500px;">
-  <h2 class="mb-3">تغییر اینترنت</h2>
-  
-  {% if message %}
-  <div class="alert alert-info">{{ message }}</div>
-  {% endif %}
-  
-  <form method="post" novalidate>
-    <div class="mb-3">
-      <label for="inet" class="form-label">انتخاب اینترنت</label>
-      <select id="inet" name="inet" class="form-select" required>
-        <option value="">انتخاب کنید...</option>
-        {% for key, val in interfaces.items() %}
-          <option value="{{ key }}">{{ val.interface }} ({{ val.routing_mark }})</option>
-        {% endfor %}
-      </select>
-    </div>
-    <button type="submit" class="btn btn-primary w-100">اعمال تغییرات</button>
-  </form>
-  
-  <a href="/" class="btn btn-secondary mt-3">بازگشت</a>
-</div>
-</body>
-</html>
+{% if message %}
+  <div class="alert alert-info mt-3">{{ message }}</div>
+{% endif %}
+
+<form method="post" class="mt-4">
+  <div class="mb-3">
+    <label for="inet" class="form-label">اینترنت مورد نظر را انتخاب کنید:</label>
+    <select class="form-select" id="inet" name="inet" required>
+      <option value="">انتخاب کنید</option>
+      {% for key, val in interfaces.items() %}
+        <option value="{{ key }}">{{ val.routing_mark }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary">تغییر اینترنت</button>
+</form>
+{% endblock %}
