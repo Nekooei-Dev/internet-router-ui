@@ -1,17 +1,25 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>چک API</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-<style> body { direction: rtl; padding: 30px; background: #fff; } </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>بررسی اتصال MikroTik</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
 </head>
-<body>
-<div class="container">
-  <h2 class="mb-4">وضعیت اتصال API میکروتیک</h2>
-  <div class="alert alert-info">{{ status }}</div>
-  <a href="/" class="btn btn-primary">بازگشت به داشبورد</a>
+<body class="bg-light">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Router UI</a>
+    <div class="d-flex">
+      <a href="/logout" class="btn btn-outline-light">خروج</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <h2>وضعیت اتصال به MikroTik</h2>
+  <div class="alert alert-info mt-3">{{ status }}</div>
+  <a href="/" class="btn btn-secondary mt-2">بازگشت</a>
 </div>
 </body>
 </html>
