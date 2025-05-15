@@ -1,14 +1,15 @@
-<!doctype html>
-<html lang="fa">
-<head>
-  <meta charset="utf-8">
-  <title>ورود</title>
-</head>
-<body>
-  <form method="post">
-    <label>رمز عبور:</label>
-    <input type="password" name="password">
-    <button type="submit">ورود</button>
-  </form>
-</body>
-</html>
+<h2>اینترنت فعلی شما:</h2>
+{% if current_inet %}
+  <p style="color: green;">{{ interface_marks[current_inet]["name"] }}</p>
+{% else %}
+  <p style="color: red;">نامشخص (هیچ روتی برای شما تنظیم نشده)</p>
+{% endif %}
+
+<h3>انتخاب اینترنت:</h3>
+<ul>
+  {% for key, val in interface_marks.items() %}
+    <li>
+      <a href="/set?inet={{ key }}">{{ val["name"] }}</a>
+    </li>
+  {% endfor %}
+</ul>
