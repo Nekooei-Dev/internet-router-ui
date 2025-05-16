@@ -83,30 +83,32 @@ def change_internet():
     user_ip = request.remote_addr
     message = ''
 
-    print(f"📡 IP کاربر: {user_ip}")  # مرحله 0
-
     if request.method == 'POST':
+        print("📨 متد POST دریافت شد")
         inet = request.form.get('inet')
-        print(f"📥 انتخاب کاربر: {inet}")  # مرحله 1
+        print(f"📥 اینترنت انتخابی: {inet}")
+        print(f"📡 IP کاربر: {user_ip}")
 
         if inet not in INTERFACE_MARKS:
             message = "❌ اینترنت انتخاب شده نامعتبر است"
+            print(message)
         else:
             try:
                 print("🔐 اتصال به MikroTik...")
                 api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
 
-                print("🧹 دریافت لیست منگل‌ها...")
+                # گرفتن قوانین فعلی
                 mangle = api(cmd='/ip/firewall/mangle/print')
+                print("📄 دریافت قوانین فعلی مَنگل...")
 
-                print("🗑️ حذف منگل‌های قبلی...")
+                # حذف قوانین قبلی
                 for rule in mangle:
                     if rule.get('comment') == f"Internet Switcher {user_ip}":
-                        print(f"⛔ حذف: {rule}")
+                        print(f"🗑 حذف قانون با ID: {rule['.id']}")
                         api(cmd='/ip/firewall/mangle/remove', **{'.id': rule['.id']})
 
-                # آماده‌سازی دستور
-                data = {
+                # قانون جدید
+                rule = {
                     'chain': 'prerouting',
                     'src-address': user_ip,
                     'action': 'mark-routing',
@@ -114,11 +116,12 @@ def change_internet():
                     'passthrough': 'yes',
                     'comment': f"Internet Switcher {user_ip}"
                 }
+                print(f"➕ افزودن قانون جدید: {rule}")
 
-                print(f"➕ افزودن قانون جدید: {data}")
-                api(cmd='/ip/firewall/mangle/add', **data)
+                api(cmd='/ip/firewall/mangle/add', **rule)
 
                 message = "✅ اینترنت شما با موفقیت تغییر یافت."
+                print(message)
 
             except TrapError as e:
                 message = f"❌ خطا در تغییر اینترنت (MikroTik Trap): {str(e)}"
