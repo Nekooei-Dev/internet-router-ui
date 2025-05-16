@@ -83,22 +83,29 @@ def change_internet():
     user_ip = request.remote_addr
     message = ''
 
+    print(f"📡 IP کاربر: {user_ip}")  # مرحله 0
+
     if request.method == 'POST':
         inet = request.form.get('inet')
+        print(f"📥 انتخاب کاربر: {inet}")  # مرحله 1
 
         if inet not in INTERFACE_MARKS:
             message = "❌ اینترنت انتخاب شده نامعتبر است"
         else:
             try:
+                print("🔐 اتصال به MikroTik...")
                 api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
+
+                print("🧹 دریافت لیست منگل‌ها...")
                 mangle = api(cmd='/ip/firewall/mangle/print')
 
-                # حذف قوانین قبلی
+                print("🗑️ حذف منگل‌های قبلی...")
                 for rule in mangle:
                     if rule.get('comment') == f"Internet Switcher {user_ip}":
+                        print(f"⛔ حذف: {rule}")
                         api(cmd='/ip/firewall/mangle/remove', **{'.id': rule['.id']})
 
-                # ساختن دستور جدید
+                # آماده‌سازی دستور
                 data = {
                     'chain': 'prerouting',
                     'src-address': user_ip,
@@ -108,16 +115,17 @@ def change_internet():
                     'comment': f"Internet Switcher {user_ip}"
                 }
 
-                print(f"🔧 دستور به MikroTik: {data}")
-
+                print(f"➕ افزودن قانون جدید: {data}")
                 api(cmd='/ip/firewall/mangle/add', **data)
 
                 message = "✅ اینترنت شما با موفقیت تغییر یافت."
 
             except TrapError as e:
                 message = f"❌ خطا در تغییر اینترنت (MikroTik Trap): {str(e)}"
+                print(message)
             except Exception as e:
                 message = f"❌ خطا در تغییر اینترنت: {str(e)}"
+                print(message)
 
     return render_template('change_internet.html', message=message, interfaces=INTERFACE_MARKS)
 
