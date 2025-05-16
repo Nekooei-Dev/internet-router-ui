@@ -1,2 +1,3 @@
 Flask==2.3.3
-librouteros==3.4.1
+librouteros==3.1.0
+python-dotenv==1.0.1
