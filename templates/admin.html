@@ -1,7 +1,8 @@
 {% extends "layout.html" %}
-{% block title %}پنل مدیریت{% endblock %}
 {% block content %}
-<h2>پنل مدیریت</h2>
-<pre>{{ rules }}</pre>
-<a href="/" class="btn btn-primary">بازگشت</a>
+<div class="mt-4">
+    <h4>مدیریت قوانین کاربران</h4>
+    <pre class="p-3 bg-light border rounded" style="white-space: pre-wrap;">{{ rules }}</pre>
+    <a href="/" class="btn btn-secondary mt-3">بازگشت</a>
+</div>
 {% endblock %}
