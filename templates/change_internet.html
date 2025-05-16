@@ -1,22 +1,14 @@
-{% extends "layout.html" %}
-{% block title %}تغییر اینترنت{% endblock %}
-{% block content %}
-<h3>تغییر اینترنت</h3>
-
-{% if message %}
-  <div class="alert alert-info mt-3">{{ message }}</div>
-{% endif %}
-
-<form method="post" class="mt-4">
-  <div class="mb-3">
-    <label for="inet" class="form-label">اینترنت مورد نظر را انتخاب کنید:</label>
-    <select class="form-select" id="inet" name="inet" required>
-      <option value="">انتخاب کنید</option>
-      {% for key, val in interfaces.items() %}
-        <option value="{{ key }}">{{ val.routing_mark }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <button type="submit" class="btn btn-primary">تغییر اینترنت</button>
-</form>
-{% endblock %}
+<!DOCTYPE html>
+<html>
+<head><title>تغییر اینترنت</title></head>
+<body>
+    <h2>انتخاب اینترنت جدید</h2>
+    {% if message %}<p>{{ message }}</p>{% endif %}
+    <form method="post">
+        {% for key, value in interfaces.items() %}
+            <input type="radio" name="inet" value="{{ key }}" required /> {{ value.routing_mark }}<br>
+        {% endfor %}
+        <button type="submit">ثبت</button>
+    </form>
+</body>
+</html>
