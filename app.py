@@ -18,7 +18,6 @@ WEB_PORT = int(os.environ.get('WEB_PORT', 5000))
 ALLOWED_NETWORKS = os.environ.get('ALLOWED_NETWORKS', '0.0.0.0/0').split(',')
 
 # انتخاب اینترنت
-
 INTERFACE_MARKS = {
     "1": {"routing_mark": "To-IranCell"},
     "2": {"routing_mark": "To-HamrahAval"},
@@ -35,7 +34,7 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        if request.form.get('password') == '123456':
+        if request.form.get('password') == WEB_PASSWORD:
             session['authenticated'] = True
             return redirect('/')
         else:
@@ -52,7 +51,7 @@ def check_api():
     if not session.get('authenticated'):
         return redirect('/login')
     try:
-        api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT)
+        api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
         list(api(cmd='/system/resource/print'))
         status = "✅ اتصال به MikroTik برقرار است."
     except Exception as e:
@@ -65,12 +64,12 @@ def user_status():
         return redirect('/login')
     user_ip = request.remote_addr
     try:
-        api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT)
+        api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
         mangles = api(cmd='/ip/firewall/mangle/print')
         routing_mark = 'هیچ قانونی یافت نشد'
         for rule in mangles:
             if rule.get('comment') == f"Internet Switcher {user_ip}":
-                routing_mark = rule.get('new-routing-mark', 'نامشخص')
+                routing_mark = rule.get('new_routing_mark', 'نامشخص')
                 break
     except Exception as e:
         routing_mark = f"❌ خطا در دریافت اطلاعات: {str(e)}"
@@ -91,7 +90,7 @@ def change_internet():
             message = "❌ اینترنت انتخاب شده نامعتبر است"
         else:
             try:
-                api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT)
+                api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
                 mangle = api(cmd='/ip/firewall/mangle/print')
 
                 # حذف قوانین قبلی برای کاربر با comment مشخص
@@ -103,9 +102,9 @@ def change_internet():
                 api(cmd='/ip/firewall/mangle/add',
                     **{
                         'chain': 'prerouting',
-                        'src-address': user_ip,
-                        'action': 'mark-routing',
-                        'new-routing-mark': INTERFACE_MARKS[inet]['routing_mark'],
+                        'src_address': user_ip,
+                        'action': 'mark_routing',
+                        'new_routing_mark': INTERFACE_MARKS[inet]['routing_mark'],
                         'passthrough': 'yes',
                         'comment': f"Internet Switcher {user_ip}"
                     })
@@ -120,4 +119,4 @@ def change_internet():
     return render_template('change_internet.html', message=message, interfaces=INTERFACE_MARKS)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=WEB_PORT)
