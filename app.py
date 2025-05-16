@@ -62,7 +62,7 @@ def check_api():
 def user_status():
     if not session.get('authenticated'):
         return redirect('/login')
-    user_ip = 172.32.10.10
+    user_ip = request.remote_addr
     try:
         api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
         mangles = api(cmd='/ip/firewall/mangle/print')
@@ -80,7 +80,7 @@ def change_internet():
     if not session.get('authenticated'):
         return redirect('/login')
 
-    user_ip = request.remote_addr
+    user_ip = '192.168.88.10'
     message = ''
 
     if request.method == 'POST':
