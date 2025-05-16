@@ -1,15 +1,24 @@
 {% extends "layout.html" %}
-{% block title %}ورود{% endblock %}
 {% block content %}
-<h2>ورود</h2>
-<form method="post">
-    <div class="mb-3">
-        <label for="password" class="form-label">رمز عبور:</label>
-        <input type="password" class="form-control" id="password" name="password" required>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">ورود به سامانه</h5>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="password" class="form-label">رمز عبور</label>
+                        <input type="password" class="form-control" id="password" name="password" placeholder="رمز عبور">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">ورود</button>
+                </form>
+            </div>
+        </div>
     </div>
-    {% if error %}
-    <div class="alert alert-danger">{{ error }}</div>
-    {% endif %}
-    <button type="submit" class="btn btn-primary">ورود</button>
-</form>
+</div>
 {% endblock %}
