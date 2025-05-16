@@ -1,7 +1,10 @@
 import os
 from flask import Flask, render_template, request, redirect, session
-import paramiko
+from dotenv import load_dotenv
 from ipaddress import ip_network, ip_address
+from routeros_api import RouterOsApiPool
+
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'secret')
@@ -10,9 +13,8 @@ app.secret_key = os.getenv('SECRET_KEY', 'secret')
 API_HOST = os.getenv('API_HOST', '172.30.30.254')
 API_USER = os.getenv('API_USER', 'API')
 API_PASS = os.getenv('API_PASS', 'API')
-API_PORT = int(os.getenv('API_PORT', 22))
-API_USE_SSL = os.getenv('API_USE_SSL', 'false').lower() == 'true'
-WEB_PORT = int(os.getenv('WEB_PORT', 5000))
+API_PORT = int(os.getenv('API_PORT', 8728))  # پورت API معمول میکروتیک
+USE_SSL = os.getenv('API_USE_SSL', 'false').lower() == 'true'
 
 WEB_USER_PASSWORD = os.getenv('WEB_USER_PASSWORD', '123456')
 WEB_ADMIN_PASSWORD = os.getenv('WEB_ADMIN_PASSWORD', '123456789')
@@ -27,132 +29,104 @@ INTERFACE_MARKS = {
     "4": "To-Anten"
 }
 
-
 def allowed_ip(ip):
     for net in ALLOWED_NETWORKS:
         if '-' in net:
             start, end = net.split('-')
             if ip_address(start) <= ip_address(ip) <= ip_address(end):
                 return True
-        elif '/' in net:
-            if ip_address(ip) in ip_network(net, strict=False):
-                return True
         else:
-            if ip == net:
+            if ip_address(ip) in ip_network(net):
                 return True
     return False
 
-
-def ssh_command(command):
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(API_HOST, port=API_PORT, username=API_USER, password=API_PASS, timeout=5)
-    stdin, stdout, stderr = ssh.exec_command(command)
-    output = stdout.read().decode()
-    error = stderr.read().decode()
-    ssh.close()
-    if error:
-        raise Exception(error)
-    return output
-
-
-@app.before_request
-def check_ip():
-    if not allowed_ip(request.remote_addr):
-        return "⛔ دسترسی برای IP شما مجاز نیست.", 403
-
+def mikrotik_connect():
+    pool = RouterOsApiPool(API_HOST, username=API_USER, password=API_PASS, port=API_PORT, use_ssl=USE_SSL)
+    return pool.get_api()
 
 @app.route('/')
 def index():
-    if not session.get('authenticated'):
-        return redirect('/login')
-    return render_template('index.html')
+    if 'user_type' in session:
+        return redirect('/admin' if session['user_type'] == 'admin' else '/change-internet')
+    return render_template('login.html')
 
-
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['POST'])
 def login():
-    error = None
-    if request.method == 'POST':
-        pwd = request.form.get('password')
-        if pwd == WEB_USER_PASSWORD:
-            session['authenticated'] = True
-            session['role'] = 'user'
-            return redirect('/')
-        elif pwd == WEB_ADMIN_PASSWORD:
-            session['authenticated'] = True
-            session['role'] = 'admin'
-            return redirect('/admin')
-        else:
-            error = "رمز اشتباه است"
-    return render_template('login.html', error=error)
-
+    password = request.form.get('password')
+    if password == WEB_ADMIN_PASSWORD:
+        session['user_type'] = 'admin'
+        return redirect('/admin')
+    elif password == WEB_USER_PASSWORD:
+        session['user_type'] = 'user'
+        return redirect('/change-internet')
+    return redirect('/')
 
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect('/login')
+    return redirect('/')
 
-
-@app.route('/check_api')
-def check_api():
-    if not session.get('authenticated'):
-        return redirect('/login')
-    try:
-        output = ssh_command('/system identity print')
-        return render_template('check_api.html', status="✅ اتصال موفق: " + output)
-    except Exception as e:
-        return render_template('check_api.html', status=f"❌ خطا: {e}")
-
-
-@app.route('/user_status')
-def user_status():
-    if not session.get('authenticated'):
-        return redirect('/login')
-    ip = request.remote_addr
-    try:
-        result = ssh_command(f'/ip firewall mangle print where comment="Internet Switcher {ip}"')
-        return render_template('user_status.html', routing_mark=result if result else "هیچ منگلی یافت نشد")
-    except Exception as e:
-        return render_template('user_status.html', routing_mark=f"خطا: {e}")
-
-
-@app.route('/change_internet', methods=['GET', 'POST'])
+@app.route('/change-internet', methods=['GET', 'POST'])
 def change_internet():
-    if not session.get('authenticated'):
-        return redirect('/login')
-    ip = request.remote_addr
-    message = ''
-    if request.method == 'POST':
-        inet = request.form.get('inet')
-        if inet not in INTERFACE_MARKS:
-            message = "❌ اینترنت انتخاب شده نامعتبر است"
-        else:
-            try:
-                ssh_command(f'/ip firewall mangle remove [find comment="Internet Switcher {ip}"]')
-                ssh_command(
-                    f'/ip firewall mangle add chain=prerouting src-address={ip} action=mark-routing new-routing-mark={INTERFACE_MARKS[inet]} passthrough=yes comment="Internet Switcher {ip}"'
-                )
-                message = "✅ اینترنت با موفقیت تنظیم شد"
-            except Exception as e:
-                message = f"❌ خطا: {e}"
-    return render_template('change_internet.html', message=message, interfaces=INTERFACE_MARKS)
-
-
-@app.route('/admin', methods=['GET', 'POST'])
-def admin():
-    if session.get('role') != 'admin':
+    if 'user_type' not in session or session['user_type'] != 'user':
         return redirect('/')
+    
+    user_ip = request.remote_addr
+    if not allowed_ip(user_ip):
+        return "IP not allowed"
+
+    if request.method == 'POST':
+        selected_interface = request.form.get('interface')
+        mark = INTERFACE_MARKS.get(selected_interface, DEFAULT_ROUTING_MARK)
+        try:
+            api = mikrotik_connect()
+            firewall = api.get_resource('/ip/firewall/mangle')
+            rules = firewall.get()
+            for rule in rules:
+                if 'src-address' in rule and rule['src-address'] == user_ip:
+                    firewall.update(id=rule['id'], new_routing_mark=mark)
+                    break
+            else:
+                firewall.add(chain="prerouting", action="mark-routing", new_routing_mark=mark,
+                             passthrough="yes", src_address=user_ip)
+        except Exception as e:
+            return f"Error: {e}"
+        return redirect('/change-internet')
+
+    return render_template('change_internet.html', interfaces=INTERFACE_MARKS)
+
+@app.route('/admin')
+def admin_panel():
+    if 'user_type' not in session or session['user_type'] != 'admin':
+        return redirect('/')
+    return render_template('admin.html')
+
+@app.route('/user-status')
+def user_status():
+    if 'user_type' not in session:
+        return redirect('/')
+    user_ip = request.remote_addr
+    if not allowed_ip(user_ip):
+        return "IP not allowed"
     try:
-        output = ssh_command('/ip firewall mangle print where comment~"Internet Switcher"')
+        api = mikrotik_connect()
+        firewall = api.get_resource('/ip/firewall/mangle')
+        rules = firewall.get()
+        for rule in rules:
+            if 'src-address' in rule and rule['src-address'] == user_ip:
+                return render_template('user_status.html', rule=rule)
     except Exception as e:
-        output = f"❌ خطا در دریافت اطلاعات: {e}"
-    return render_template('admin.html', rules=output)
+        return f"Error: {e}"
+    return "No rule found"
 
-@app.route('/about')
-def about():
-    return render_template('about.html', name="مصطفی نکویی", bio="برنامه‌نویس و مدیر شبکه", phone="09121234567", email="mo@example.com")
-
-
+@app.route('/check-api')
+def check_api():
+    try:
+        api = mikrotik_connect()
+        identity = api.get_resource('/system/identity').get()
+        return f"Connected to MikroTik: {identity[0]['name']}"
+    except Exception as e:
+        return f"Error connecting to MikroTik API: {str(e)}"
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=WEB_PORT)
+    app.run(host='0.0.0.0', port=5000)
