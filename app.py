@@ -148,6 +148,11 @@ def admin():
         output = f"❌ خطا در دریافت اطلاعات: {e}"
     return render_template('admin.html', rules=output)
 
+@app.route('/about')
+def about():
+    return render_template('about.html', name="مصطفی نکویی", bio="برنامه‌نویس و مدیر شبکه", phone="09121234567", email="mo@example.com")
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=WEB_PORT)
