@@ -1,7 +1,8 @@
 {% extends "layout.html" %}
-{% block title %}بررسی اتصال{% endblock %}
 {% block content %}
-<h2>بررسی اتصال به MikroTik</h2>
-<p>{{ status }}</p>
-<a href="/" class="btn btn-primary">بازگشت</a>
+<div class="mt-4">
+    <h4>وضعیت اتصال به MikroTik</h4>
+    <pre class="p-3 bg-light border rounded" style="white-space: pre-wrap;">{{ status }}</pre>
+    <a href="/" class="btn btn-secondary mt-3">بازگشت</a>
+</div>
 {% endblock %}
