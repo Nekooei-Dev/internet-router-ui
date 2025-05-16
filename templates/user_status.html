@@ -1,12 +1,7 @@
-<!DOCTYPE html>
-<html lang="fa">
-<head>
-    <meta charset="UTF-8">
-    <title>وضعیت اینترنت</title>
-</head>
-<body>
-    <h2>وضعیت اینترنت شما</h2>
-    <p>{{ routing_mark }}</p>
-    <a href="/">بازگشت به خانه</a>
-</body>
-</html>
+{% extends "layout.html" %}
+{% block title %}وضعیت اینترنت{% endblock %}
+{% block content %}
+<h2>وضعیت اینترنت شما</h2>
+<pre>{{ routing_mark }}</pre>
+<a href="/" class="btn btn-primary">بازگشت</a>
+{% endblock %}
