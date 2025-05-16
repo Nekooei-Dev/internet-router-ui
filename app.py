@@ -95,12 +95,24 @@ def change_internet():
         else:
             try:
                 api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
+
+                print("[DEBUG] Rule that is about to be added:")
+                for k, v in rule_data.items():
+                print(f"{k} = {v}")
+
                 mangle = api(cmd='/ip/firewall/mangle/print')
 
                 # حذف قوانین قبلی برای کاربر
                 for rule in mangle:
                     if rule.get('comment') == f"Internet Switcher {user_ip}":
                         print(f"[DEBUG] Removing existing rule with ID: {rule['.id']}")
+
+                        
+                        print("[DEBUG] Rule that is about to be added:")
+                        for k, v in rule_data.items():
+                        print(f"{k} = {v}")
+
+                        
                         api(cmd='/ip/firewall/mangle/remove', **{'.id': rule['.id']})
 
                 # قانون جدید
@@ -114,6 +126,11 @@ def change_internet():
                 }
 
                 print(f"[DEBUG] Adding rule: {rule_data}")
+
+                print("[DEBUG] Rule that is about to be added:")
+                for k, v in rule_data.items():
+                print(f"{k} = {v}")  
+                
                 api(cmd='/ip/firewall/mangle/add', **rule_data)
 
                 message = "✅ اینترنت شما با موفقیت تغییر یافت."
