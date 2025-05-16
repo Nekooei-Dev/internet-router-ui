@@ -1,23 +1,20 @@
-<!DOCTYPE html>
-<html lang="fa">
-<head>
-    <meta charset="UTF-8">
-    <title>تغییر اینترنت</title>
-</head>
-<body>
-    <h2>تغییر مسیر اینترنت</h2>
-    {% if message %}
-        <p style="color: {{ 'green' if 'با موفقیت' in message else 'red' }}">{{ message }}</p>
-    {% endif %}
-    <form method="POST">
-        <select name="inet" required>
-            {% for key, info in interfaces.items() %}
-                <option value="{{ key }}">{{ info.routing_mark }}</option>
+{% extends "layout.html" %}
+{% block title %}تغییر اینترنت{% endblock %}
+{% block content %}
+<h2>تغییر اینترنت</h2>
+{% if message %}
+<div class="alert alert-info">{{ message }}</div>
+{% endif %}
+<form method="post">
+    <div class="mb-3">
+        <label for="inet" class="form-label">انتخاب اینترنت:</label>
+        <select class="form-select" id="inet" name="inet">
+            {% for key, value in interfaces.items() %}
+            <option value="{{ key }}">{{ value }}</option>
             {% endfor %}
         </select>
-        <button type="submit">اعمال</button>
-    </form>
-    <br>
-    <a href="/">بازگشت به صفحه اصلی</a>
-</body>
-</html>
+    </div>
+    <button type="submit" class="btn btn-success">تغییر</button>
+</form>
+<a href="/" class="btn btn-primary mt-3">بازگشت</a>
+{% endblock %}
