@@ -1,6 +1,9 @@
-{% extends "layout.html" %}
-{% block title %}وضعیت اینترنت شما{% endblock %}
-{% block content %}
-<h3>وضعیت اینترنت شما</h3>
-<p class="mt-3">وضعیت: <strong>{{ routing_mark }}</strong></p>
-{% endblock %}
+<!DOCTYPE html>
+<html>
+<head><title>وضعیت</title></head>
+<body>
+    <h2>وضعیت اینترنت فعلی</h2>
+    <p>{{ routing_mark }}</p>
+    <a href="/">بازگشت</a>
+</body>
+</html>
