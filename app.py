@@ -1,27 +1,68 @@
 import os
 from flask import Flask, render_template, request, redirect, session
-from librouteros import connect
-from librouteros.exceptions import TrapError
+import paramiko
+from ipaddress import ip_network, ip_address
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+app.secret_key = os.getenv('SECRET_KEY', 'secret')
 
-# متغیرهای محیطی
-API_HOST = os.environ.get('API_HOST', '172.30.30.254')
-API_USER = os.environ.get('API_USER', 'API')
-API_PASS = os.environ.get('API_PASS', 'API')
-API_PORT = int(os.environ.get('API_PORT', 8729))
-API_USE_SSL = os.environ.get('API_USE_SSL', 'false').lower() == 'true'
+# ENV config
+API_HOST = os.getenv('API_HOST', '172.30.30.254')
+API_USER = os.getenv('API_USER', 'API')
+API_PASS = os.getenv('API_PASS', 'API')
+API_PORT = int(os.getenv('API_PORT', 22))
+API_USE_SSL = os.getenv('API_USE_SSL', 'false').lower() == 'true'
 
-WEB_PASSWORD = os.environ.get('WEB_PASSWORD', '123456')
-WEB_PORT = int(os.environ.get('WEB_PORT', 5000))
+WEB_USER_PASSWORD = os.getenv('WEB_USER_PASSWORD', '123456')
+WEB_ADMIN_PASSWORD = os.getenv('WEB_ADMIN_PASSWORD', '123456789')
+ALLOWED_NETWORKS = os.getenv('ALLOWED_NETWORKS', '127.0.0.1').split(',')
+
+DEFAULT_ROUTING_MARK = "To-IranCell"  # تغییر توسط admin از طریق پنل
 
 INTERFACE_MARKS = {
-    "1": {"routing_mark": "To-IranCell"},
-    "2": {"routing_mark": "To-HamrahAval"},
-    "3": {"routing_mark": "To-ADSL"},
-    "4": {"routing_mark": "To-Anten"},
+    "1": "To-IranCell",
+    "2": "To-HamrahAval",
+    "3": "To-ADSL",
+    "4": "To-Anten"
 }
+
+
+def allowed_ip(ip):
+    for net in ALLOWED_NETWORKS:
+        if '-' in net:
+            start, end = net.split('-')
+            if ip_address(start) <= ip_address(ip) <= ip_address(end):
+                return True
+        elif '/' in net:
+            if ip_address(ip) in ip_network(net, strict=False):
+                return True
+        else:
+            if ip == net:
+                return True
+    return False
+
+
+def ssh_command(command):
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(API_HOST, port=22, username=API_USER, password=API_PASS)
+    stdin, stdout, stderr = ssh.exec_command(command)
+    output = stdout.read().decode()
+    error = stderr.read().decode()
+    ssh.close()
+    if error:
+        raise Exception(error)
+    return output
+
+
+@app.before_request
+def check_ip():
+    if not allowed_ip(request.remote_addr):
+        return "⛔ دسترسی برای IP شما مجاز نیست.", 403
+
 
 @app.route('/')
 def index():
@@ -29,121 +70,87 @@ def index():
         return redirect('/login')
     return render_template('index.html')
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    error = None
     if request.method == 'POST':
-        if request.form.get('password') == WEB_PASSWORD:
+        pwd = request.form.get('password')
+        if pwd == WEB_USER_PASSWORD:
             session['authenticated'] = True
+            session['role'] = 'user'
             return redirect('/')
+        elif pwd == WEB_ADMIN_PASSWORD:
+            session['authenticated'] = True
+            session['role'] = 'admin'
+            return redirect('/admin')
         else:
-            return render_template('login.html', error="رمز عبور اشتباه است")
-    return render_template('login.html')
+            error = "رمز اشتباه است"
+    return render_template('login.html', error=error)
+
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect('/login')
 
+
 @app.route('/check_api')
 def check_api():
     if not session.get('authenticated'):
         return redirect('/login')
     try:
-        print("[DEBUG] Trying API connection...")
-        api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
-        list(api(cmd='/system/resource/print'))
-        status = "✅ اتصال به MikroTik برقرار است."
+        output = ssh_command('/system identity print')
+        return render_template('check_api.html', status="✅ اتصال موفق: " + output)
     except Exception as e:
-        status = f"❌ خطا در اتصال به MikroTik: {str(e)}"
-    return render_template('check_api.html', status=status)
+        return render_template('check_api.html', status=f"❌ خطا: {e}")
+
 
 @app.route('/user_status')
 def user_status():
     if not session.get('authenticated'):
         return redirect('/login')
-
-    user_ip = request.remote_addr
-    routing_mark = 'هیچ قانونی یافت نشد'
+    ip = request.remote_addr
     try:
-        print(f"[DEBUG] Checking user status for IP: {user_ip}")
-        api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
-        mangles = api(cmd='/ip/firewall/mangle/print')
-
-        for rule in mangles:
-            if rule.get('comment') == f"Internet Switcher {user_ip}":
-                routing_mark = rule.get('new-routing-mark', 'نامشخص')
-                break
+        result = ssh_command(f'/ip firewall mangle print where comment="Internet Switcher {ip}"')
+        return render_template('user_status.html', routing_mark=result if result else "هیچ منگلی یافت نشد")
     except Exception as e:
-        routing_mark = f"❌ خطا در دریافت اطلاعات: {str(e)}"
+        return render_template('user_status.html', routing_mark=f"خطا: {e}")
 
-    return render_template('user_status.html', routing_mark=routing_mark)
 
 @app.route('/change_internet', methods=['GET', 'POST'])
 def change_internet():
     if not session.get('authenticated'):
         return redirect('/login')
-
-    user_ip = request.remote_addr
+    ip = request.remote_addr
     message = ''
-
     if request.method == 'POST':
         inet = request.form.get('inet')
-        print(f"[DEBUG] User IP: {user_ip}, Selected Internet: {inet}")
-
         if inet not in INTERFACE_MARKS:
             message = "❌ اینترنت انتخاب شده نامعتبر است"
         else:
             try:
-                api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
-
-                print("[DEBUG] Rule that is about to be added:")
-                for k, v in rule_data.items():
-                print(f"{k} = {v}")
-
-                mangle = api(cmd='/ip/firewall/mangle/print')
-
-                # حذف قوانین قبلی برای کاربر
-                for rule in mangle:
-                    if rule.get('comment') == f"Internet Switcher {user_ip}":
-                        print(f"[DEBUG] Removing existing rule with ID: {rule['.id']}")
-
-                        
-                        print("[DEBUG] Rule that is about to be added:")
-                        for k, v in rule_data.items():
-                        print(f"{k} = {v}")
-
-                        
-                        api(cmd='/ip/firewall/mangle/remove', **{'.id': rule['.id']})
-
-                # قانون جدید
-                rule_data = {
-                    'chain': 'prerouting',
-                    'src-address': user_ip,
-                    'action': 'mark-routing',
-                    'new-routing-mark': INTERFACE_MARKS[inet]['routing_mark'],
-                    'passthrough': 'yes',
-                    'comment': f"Internet Switcher {user_ip}"
-                }
-
-                print(f"[DEBUG] Adding rule: {rule_data}")
-
-                print("[DEBUG] Rule that is about to be added:")
-                for k, v in rule_data.items():
-                print(f"{k} = {v}")  
-                
-                api(cmd='/ip/firewall/mangle/add', **rule_data)
-
-                message = "✅ اینترنت شما با موفقیت تغییر یافت."
-
-            except TrapError as e:
-                message = f"❌ خطا در تغییر اینترنت (MikroTik Trap): {str(e)}"
-                print(f"[ERROR] TrapError: {str(e)}")
+                ssh_command(f'/ip firewall mangle remove [find comment="Internet Switcher {ip}"]')
+                ssh_command(
+                    f'/ip firewall mangle add chain=prerouting src-address={ip} action=mark-routing new-routing-mark={INTERFACE_MARKS[inet]} passthrough=yes comment="Internet Switcher {ip}"'
+                )
+                message = "✅ اینترنت با موفقیت تنظیم شد"
             except Exception as e:
-                message = f"❌ خطا در تغییر اینترنت: {str(e)}"
-                print(f"[ERROR] General Exception: {str(e)}")
-
+                message = f"❌ خطا: {e}"
     return render_template('change_internet.html', message=message, interfaces=INTERFACE_MARKS)
 
+
+@app.route('/admin', methods=['GET', 'POST'])
+def admin():
+    if session.get('role') != 'admin':
+        return redirect('/')
+    # در اینجا می‌توانیم لیست کاربران را با منگل‌شان نمایش دهیم
+    try:
+        output = ssh_command('/ip firewall mangle print where comment~"Internet Switcher"')
+    except Exception as e:
+        output = f"❌ خطا در دریافت اطلاعات: {e}"
+    return render_template('admin.html', rules=output)
+
+
 if __name__ == '__main__':
-    print("[INFO] Starting Flask app...")
     app.run(host='0.0.0.0', port=WEB_PORT)
