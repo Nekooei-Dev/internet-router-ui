@@ -2,9 +2,6 @@ import os
 from flask import Flask, render_template, request, redirect, session
 import paramiko
 from ipaddress import ip_network, ip_address
-from dotenv import load_dotenv
-
-load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'secret')
@@ -15,12 +12,13 @@ API_USER = os.getenv('API_USER', 'API')
 API_PASS = os.getenv('API_PASS', 'API')
 API_PORT = int(os.getenv('API_PORT', 22))
 API_USE_SSL = os.getenv('API_USE_SSL', 'false').lower() == 'true'
+WEB_PORT = int(os.getenv('WEB_PORT', 5000))
 
 WEB_USER_PASSWORD = os.getenv('WEB_USER_PASSWORD', '123456')
 WEB_ADMIN_PASSWORD = os.getenv('WEB_ADMIN_PASSWORD', '123456789')
 ALLOWED_NETWORKS = os.getenv('ALLOWED_NETWORKS', '127.0.0.1').split(',')
 
-DEFAULT_ROUTING_MARK = "To-IranCell"  # تغییر توسط admin از طریق پنل
+DEFAULT_ROUTING_MARK = "To-IranCell"
 
 INTERFACE_MARKS = {
     "1": "To-IranCell",
@@ -48,7 +46,7 @@ def allowed_ip(ip):
 def ssh_command(command):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(API_HOST, port=22, username=API_USER, password=API_PASS)
+    ssh.connect(API_HOST, port=API_PORT, username=API_USER, password=API_PASS, timeout=5)
     stdin, stdout, stderr = ssh.exec_command(command)
     output = stdout.read().decode()
     error = stderr.read().decode()
@@ -144,7 +142,6 @@ def change_internet():
 def admin():
     if session.get('role') != 'admin':
         return redirect('/')
-    # در اینجا می‌توانیم لیست کاربران را با منگل‌شان نمایش دهیم
     try:
         output = ssh_command('/ip firewall mangle print where comment~"Internet Switcher"')
     except Exception as e:
