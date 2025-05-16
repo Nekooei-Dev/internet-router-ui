@@ -1,20 +1,28 @@
 {% extends "layout.html" %}
-{% block title %}تغییر اینترنت{% endblock %}
 {% block content %}
-<h2>تغییر اینترنت</h2>
-{% if message %}
-<div class="alert alert-info">{{ message }}</div>
-{% endif %}
-<form method="post">
-    <div class="mb-3">
-        <label for="inet" class="form-label">انتخاب اینترنت:</label>
-        <select class="form-select" id="inet" name="inet">
-            {% for key, value in interfaces.items() %}
-            <option value="{{ key }}">{{ value }}</option>
-            {% endfor %}
-        </select>
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">تغییر مسیر اینترنت</h5>
+            </div>
+            <div class="card-body">
+                {% if message %}
+                    <div class="alert alert-info">{{ message }}</div>
+                {% endif %}
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="inet" class="form-label">انتخاب اینترنت</label>
+                        <select name="inet" id="inet" class="form-select">
+                            {% for key, value in interfaces.items() %}
+                                <option value="{{ key }}">اینترنت {{ key }} - {{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">ذخیره تغییرات</button>
+                </form>
+            </div>
+        </div>
     </div>
-    <button type="submit" class="btn btn-success">تغییر</button>
-</form>
-<a href="/" class="btn btn-primary mt-3">بازگشت</a>
+</div>
 {% endblock %}
