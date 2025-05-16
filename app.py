@@ -69,7 +69,7 @@ def user_status():
         routing_mark = 'هیچ قانونی یافت نشد'
         for rule in mangles:
             if rule.get('comment') == f"Internet Switcher {user_ip}":
-                routing_mark = rule.get('new_routing_mark', 'نامشخص')
+                routing_mark = rule.get('new-routing-mark', 'نامشخص')
                 break
     except Exception as e:
         routing_mark = f"❌ خطا در دریافت اطلاعات: {str(e)}"
@@ -80,7 +80,7 @@ def change_internet():
     if not session.get('authenticated'):
         return redirect('/login')
 
-    user_ip = '192.168.88.10'
+    user_ip = request.remote_addr
     message = ''
 
     if request.method == 'POST':
@@ -93,21 +93,24 @@ def change_internet():
                 api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
                 mangle = api(cmd='/ip/firewall/mangle/print')
 
-                # حذف قوانین قبلی برای کاربر با comment مشخص
+                # حذف قوانین قبلی
                 for rule in mangle:
                     if rule.get('comment') == f"Internet Switcher {user_ip}":
                         api(cmd='/ip/firewall/mangle/remove', **{'.id': rule['.id']})
 
-                # اضافه‌کردن قانون جدید
-                api(cmd='/ip/firewall/mangle/add',
-                    **{
-                        'chain': 'prerouting',
-                        'src_address': user_ip,
-                        'action': 'mark_routing',
-                        'new_routing_mark': INTERFACE_MARKS[inet]['routing_mark'],
-                        'passthrough': 'yes',
-                        'comment': f"Internet Switcher {user_ip}"
-                    })
+                # ساختن دستور جدید
+                data = {
+                    'chain': 'prerouting',
+                    'src-address': user_ip,
+                    'action': 'mark-routing',
+                    'new-routing-mark': INTERFACE_MARKS[inet]['routing_mark'],
+                    'passthrough': 'yes',
+                    'comment': f"Internet Switcher {user_ip}"
+                }
+
+                print(f"🔧 دستور به MikroTik: {data}")
+
+                api(cmd='/ip/firewall/mangle/add', **data)
 
                 message = "✅ اینترنت شما با موفقیت تغییر یافت."
 
