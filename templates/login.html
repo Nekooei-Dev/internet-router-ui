@@ -1,11 +1,16 @@
 <!DOCTYPE html>
-<html>
-<head><title>ورود</title></head>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>ورود</title>
+</head>
 <body>
     <h2>ورود</h2>
-    {% if error %}<p style="color:red;">{{ error }}</p>{% endif %}
-    <form method="post">
-        <input type="password" name="password" placeholder="رمز عبور" required />
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+    <form method="POST">
+        <input type="password" name="password" placeholder="رمز عبور" required>
         <button type="submit">ورود</button>
     </form>
 </body>
