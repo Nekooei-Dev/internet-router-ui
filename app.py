@@ -18,11 +18,12 @@ WEB_PORT = int(os.environ.get('WEB_PORT', 5000))
 ALLOWED_NETWORKS = os.environ.get('ALLOWED_NETWORKS', '0.0.0.0/0').split(',')
 
 # انتخاب اینترنت
+
 INTERFACE_MARKS = {
-    "1": {"interface": "Bridge- Local LAN", "routing_mark": "To-IranCell"},
-    "2": {"interface": "Bridge- Local LAN", "routing_mark": "To-HamrahAval"},
-    "3": {"interface": "Bridge- Local LAN", "routing_mark": "To-ADSL"},
-    "4": {"interface": "Bridge- Local LAN", "routing_mark": "To-Anten"},
+    "1": {"routing_mark": "To-IranCell"},
+    "2": {"routing_mark": "To-HamrahAval"},
+    "3": {"routing_mark": "To-ADSL"},
+    "4": {"routing_mark": "To-Anten"},
 }
 
 @app.route('/')
@@ -51,15 +52,8 @@ def check_api():
     if not session.get('authenticated'):
         return redirect('/login')
     try:
-        api = connect(
-            host=API_HOST,
-            username=API_USER,
-            password=API_PASS,
-            port=API_PORT,
-            ssl=True
-        )
-        # فقط برای بررسی اتصال
-        _ = list(api.path("ip", "firewall", "mangle"))
+        api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT)
+        list(api(cmd='/system/resource/print'))
         status = "✅ اتصال به MikroTik برقرار است."
     except Exception as e:
         status = f"❌ خطا در اتصال به MikroTik: {str(e)}"
@@ -71,20 +65,13 @@ def user_status():
         return redirect('/login')
     user_ip = request.remote_addr
     try:
-        api = connect(
-            host=API_HOST,
-            username=API_USER,
-            password=API_PASS,
-            port=API_PORT,
-            ssl=True
-        )
-        mangles = api.path("ip", "firewall", "mangle")
-        current_mark = None
+        api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT)
+        mangles = api(cmd='/ip/firewall/mangle/print')
+        routing_mark = 'هیچ قانونی یافت نشد'
         for rule in mangles:
             if rule.get('comment') == f"Internet Switcher {user_ip}":
-                current_mark = rule.get('new-routing-mark')
+                routing_mark = rule.get('new-routing-mark', 'نامشخص')
                 break
-        routing_mark = current_mark if current_mark else "هیچ قانونی یافت نشد"
     except Exception as e:
         routing_mark = f"❌ خطا در دریافت اطلاعات: {str(e)}"
     return render_template('user_status.html', routing_mark=routing_mark)
@@ -93,46 +80,42 @@ def user_status():
 def change_internet():
     if not session.get('authenticated'):
         return redirect('/login')
+
     user_ip = request.remote_addr
     message = ''
+
     if request.method == 'POST':
         inet = request.form.get('inet')
+
         if inet not in INTERFACE_MARKS:
-            message = "❌ اینترنت نامعتبر است"
+            message = "❌ اینترنت انتخاب شده نامعتبر است"
         else:
             try:
-                api = connect(
-                    host=API_HOST,
-                    username=API_USER,
-                    password=API_PASS,
-                    port=API_PORT,
-                    ssl=True
-                )
-                mangles = api.path("ip", "firewall", "mangle")
+                api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT)
+                mangle = api(cmd='/ip/firewall/mangle/print')
 
-                # حذف قوانین قبلی کاربر
-                to_delete = []
-                for rule in mangles:
+                # حذف قوانین قبلی برای کاربر با comment مشخص
+                for rule in mangle:
                     if rule.get('comment') == f"Internet Switcher {user_ip}":
-                        to_delete.append(rule['.id'])
-                for rid in to_delete:
-                    mangles.remove(id=rid)
+                        api(cmd='/ip/firewall/mangle/remove', **{'.id': rule['.id']})
 
-                # اضافه کردن قانون جدید
-                mangles.add(
-                    chain='prerouting',
-                    **{'src-address': user_ip},
-                    action='mark-routing',
-                    new_routing_mark=INTERFACE_MARKS[inet]['routing_mark'],
-                    passthrough='yes',
-                    comment=f"Internet Switcher {user_ip}"
-                )
+                # اضافه‌کردن قانون جدید
+                api(cmd='/ip/firewall/mangle/add',
+                    **{
+                        'chain': 'prerouting',
+                        'src-address': user_ip,
+                        'action': 'mark-routing',
+                        'new-routing-mark': INTERFACE_MARKS[inet]['routing_mark'],
+                        'passthrough': 'yes',
+                        'comment': f"Internet Switcher {user_ip}"
+                    })
 
-                message = "✅ اینترنت شما با موفقیت تغییر یافت"
+                message = "✅ اینترنت شما با موفقیت تغییر یافت."
+
             except TrapError as e:
-                message = f"❌ خطا در تغییر اینترنت (MikroTik Trap): {e}"
+                message = f"❌ خطا در تغییر اینترنت (MikroTik Trap): {str(e)}"
             except Exception as e:
-                message = f"❌ خطا در تغییر اینترنت: {e}"
+                message = f"❌ خطا در تغییر اینترنت: {str(e)}"
 
     return render_template('change_internet.html', message=message, interfaces=INTERFACE_MARKS)
 
