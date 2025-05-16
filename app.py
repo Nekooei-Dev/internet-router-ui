@@ -6,7 +6,7 @@ from librouteros.exceptions import TrapError
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-# خواندن متغیرهای محیطی با مقادیر پیش‌فرض
+# متغیرهای محیطی
 API_HOST = os.environ.get('API_HOST', '172.30.30.254')
 API_USER = os.environ.get('API_USER', 'API')
 API_PASS = os.environ.get('API_PASS', 'API')
@@ -15,9 +15,7 @@ API_USE_SSL = os.environ.get('API_USE_SSL', 'false').lower() == 'true'
 
 WEB_PASSWORD = os.environ.get('WEB_PASSWORD', '123456')
 WEB_PORT = int(os.environ.get('WEB_PORT', 5000))
-ALLOWED_NETWORKS = os.environ.get('ALLOWED_NETWORKS', '0.0.0.0/0').split(',')
 
-# انتخاب اینترنت
 INTERFACE_MARKS = {
     "1": {"routing_mark": "To-IranCell"},
     "2": {"routing_mark": "To-HamrahAval"},
@@ -51,6 +49,7 @@ def check_api():
     if not session.get('authenticated'):
         return redirect('/login')
     try:
+        print("[DEBUG] Trying API connection...")
         api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
         list(api(cmd='/system/resource/print'))
         status = "✅ اتصال به MikroTik برقرار است."
@@ -62,17 +61,21 @@ def check_api():
 def user_status():
     if not session.get('authenticated'):
         return redirect('/login')
+
     user_ip = request.remote_addr
+    routing_mark = 'هیچ قانونی یافت نشد'
     try:
+        print(f"[DEBUG] Checking user status for IP: {user_ip}")
         api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
         mangles = api(cmd='/ip/firewall/mangle/print')
-        routing_mark = 'هیچ قانونی یافت نشد'
+
         for rule in mangles:
             if rule.get('comment') == f"Internet Switcher {user_ip}":
                 routing_mark = rule.get('new-routing-mark', 'نامشخص')
                 break
     except Exception as e:
         routing_mark = f"❌ خطا در دریافت اطلاعات: {str(e)}"
+
     return render_template('user_status.html', routing_mark=routing_mark)
 
 @app.route('/change_internet', methods=['GET', 'POST'])
@@ -84,31 +87,24 @@ def change_internet():
     message = ''
 
     if request.method == 'POST':
-        print("📨 متد POST دریافت شد")
         inet = request.form.get('inet')
-        print(f"📥 اینترنت انتخابی: {inet}")
-        print(f"📡 IP کاربر: {user_ip}")
+        print(f"[DEBUG] User IP: {user_ip}, Selected Internet: {inet}")
 
         if inet not in INTERFACE_MARKS:
             message = "❌ اینترنت انتخاب شده نامعتبر است"
-            print(message)
         else:
             try:
-                print("🔐 اتصال به MikroTik...")
                 api = connect(username=API_USER, password=API_PASS, host=API_HOST, port=API_PORT, use_ssl=API_USE_SSL)
-
-                # گرفتن قوانین فعلی
                 mangle = api(cmd='/ip/firewall/mangle/print')
-                print("📄 دریافت قوانین فعلی مَنگل...")
 
-                # حذف قوانین قبلی
+                # حذف قوانین قبلی برای کاربر
                 for rule in mangle:
                     if rule.get('comment') == f"Internet Switcher {user_ip}":
-                        print(f"🗑 حذف قانون با ID: {rule['.id']}")
+                        print(f"[DEBUG] Removing existing rule with ID: {rule['.id']}")
                         api(cmd='/ip/firewall/mangle/remove', **{'.id': rule['.id']})
 
                 # قانون جدید
-                rule = {
+                rule_data = {
                     'chain': 'prerouting',
                     'src-address': user_ip,
                     'action': 'mark-routing',
@@ -116,21 +112,21 @@ def change_internet():
                     'passthrough': 'yes',
                     'comment': f"Internet Switcher {user_ip}"
                 }
-                print(f"➕ افزودن قانون جدید: {rule}")
 
-                api(cmd='/ip/firewall/mangle/add', **rule)
+                print(f"[DEBUG] Adding rule: {rule_data}")
+                api(cmd='/ip/firewall/mangle/add', **rule_data)
 
                 message = "✅ اینترنت شما با موفقیت تغییر یافت."
-                print(message)
 
             except TrapError as e:
                 message = f"❌ خطا در تغییر اینترنت (MikroTik Trap): {str(e)}"
-                print(message)
+                print(f"[ERROR] TrapError: {str(e)}")
             except Exception as e:
                 message = f"❌ خطا در تغییر اینترنت: {str(e)}"
-                print(message)
+                print(f"[ERROR] General Exception: {str(e)}")
 
     return render_template('change_internet.html', message=message, interfaces=INTERFACE_MARKS)
 
 if __name__ == '__main__':
+    print("[INFO] Starting Flask app...")
     app.run(host='0.0.0.0', port=WEB_PORT)
