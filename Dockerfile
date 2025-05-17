@@ -1,22 +1,18 @@
-FROM python:3.11
+FROM python:3.11-slim
 
+# تنظیمات محیط و کاربری
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# ساخت دایرکتوری کاری
 WORKDIR /app
 
-# نصب پیش‌نیازهای ساخت برای PyNaCl و سایر پکیج‌ها
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    gcc \
-    libffi-dev \
-    libssl-dev \
-    libsodium-dev \
-    && rm -rf /var/lib/apt/lists/*
-
+# نصب پیش‌نیازها
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# فعال‌سازی wheel برای جلوگیری از build طولانی
-RUN pip install --upgrade pip wheel setuptools \
-    && pip install --no-cache-dir -r requirements.txt
-
+# کپی پروژه
 COPY . .
 
+# اجرای برنامه
 CMD ["python", "app.py"]
