@@ -1,19 +1,9 @@
 {% extends 'layout.html' %}
+{% block title %}ورود{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-4">
-    <div class="card shadow">
-      <div class="card-body">
-        <h5 class="card-title text-center">ورود</h5>
-        <form method="post" action="/login">
-          <div class="mb-3">
-            <label for="password" class="form-label">رمز عبور</label>
-            <input type="password" class="form-control" id="password" name="password" required>
-          </div>
-          <button type="submit" class="btn btn-primary w-100">ورود</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
+<h2>🔐 ورود</h2>
+<form method="post">
+    <input type="password" name="password" class="form-control" placeholder="رمز عبور">
+    <button class="btn btn-primary mt-2">ورود</button>
+</form>
 {% endblock %}
