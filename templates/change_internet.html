@@ -1,15 +1,17 @@
 {% extends 'layout.html' %}
+{% block title %}تغییر اینترنت{% endblock %}
 {% block content %}
-<h3 class="mb-4">تغییر مسیر اینترنت</h3>
+<h2>🌐 تغییر اینترنت</h2>
+
 <form method="post">
-  <div class="mb-3">
-    <label for="interface" class="form-label">انتخاب مسیر</label>
-    <select class="form-select" id="interface" name="interface" required>
-      {% for key, value in interfaces.items() %}
-        <option value="{{ key }}">{{ value }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <button type="submit" class="btn btn-success">اعمال تغییر</button>
+    <div class="mb-3">
+        <label>انتخاب اینترنت</label>
+        <select class="form-select" name="internet">
+            {% for item in options %}
+                <option value="{{ item }}">{{ item }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button class="btn btn-primary">ثبت</button>
 </form>
 {% endblock %}
