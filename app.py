@@ -1,130 +1,112 @@
+from flask import Flask, render_template, request, redirect, session, abort, url_for
 import os
-from flask import Flask, render_template, request, redirect, session
-from ipaddress import ip_network, ip_address
-from routeros_api import RouterOsApiPool
-
+import routeros_api
+import ipaddress
 
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'secret')
+app.secret_key = os.environ.get("SECRET_KEY", "defaultsecret")
 
-# ENV config
-API_HOST = os.getenv('API_HOST', '172.30.30.254')
-API_USER = os.getenv('API_USER', 'API')
-API_PASS = os.getenv('API_PASS', 'API')
-API_PORT = int(os.getenv('API_PORT', 8728))
-USE_SSL = os.getenv('API_USE_SSL', 'false').lower() == 'true'
+# میکروتیک API
+API_HOST = os.environ.get("API_HOST")
+API_USER = os.environ.get("API_USER")
+API_PASS = os.environ.get("API_PASS")
+API_PORT = int(os.environ.get("API_PORT", 8728))
 
-WEB_USER_PASSWORD = os.getenv('WEB_USER_PASSWORD', '123456')
-WEB_ADMIN_PASSWORD = os.getenv('WEB_ADMIN_PASSWORD', '123456789')
-ALLOWED_NETWORKS = os.getenv('ALLOWED_NETWORKS', '127.0.0.1').split(',')
+# احراز هویت
+WEB_USER_PASSWORD = os.environ.get("WEB_USER_PASSWORD", "123456")
+WEB_ADMIN_PASSWORD = os.environ.get("WEB_ADMIN_PASSWORD", "123456789")
 
-DEFAULT_ROUTING_MARK = "To-IranCell"
+# کنترل دسترسی آی‌پی
+ALLOWED_NETWORKS = os.environ.get("ALLOWED_NETWORKS", "").split(",")
 
-INTERFACE_MARKS = {
-    "1": "To-IranCell",
-    "2": "To-HamrahAval",
-    "3": "To-ADSL",
-    "4": "To-Anten"
-}
 
-def allowed_ip(ip):
+def is_ip_allowed(ip):
     for net in ALLOWED_NETWORKS:
         if '-' in net:
             start, end = net.split('-')
-            if ip_address(start) <= ip_address(ip) <= ip_address(end):
+            if ipaddress.IPv4Address(start) <= ipaddress.IPv4Address(ip) <= ipaddress.IPv4Address(end):
                 return True
         else:
-            if ip_address(ip) in ip_network(net):
+            if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(net, strict=False):
                 return True
     return False
 
-def mikrotik_connect():
-    pool = RouterOsApiPool(API_HOST, username=API_USER, password=API_PASS, port=API_PORT, use_ssl=USE_SSL)
-    return pool.get_api()
 
-@app.route('/')
+@app.before_request
+def limit_remote_addr():
+    if not is_ip_allowed(request.remote_addr):
+        abort(403)
+
+
+def get_api():
+    try:
+        pool = routeros_api.RouterOsApiPool(
+            host=API_HOST,
+            username=API_USER,
+            password=API_PASS,
+            port=API_PORT,
+            plaintext_login=True
+        )
+        return pool.get_api(), pool
+    except Exception as e:
+        print("API connection error:", e)
+        return None, None
+
+
+def is_logged_in():
+    return 'logged_in' in session
+
+
+@app.route('/', methods=['GET'])
 def index():
-    if 'user_type' in session:
-        return redirect('/admin' if session['user_type'] == 'admin' else '/change-internet')
+    api, pool = get_api()
+    api_ok = bool(api)
+    if pool:
+        pool.disconnect()
+    return render_template('index.html', api_ok=api_ok)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        pw = request.form.get('password')
+        if pw in [WEB_USER_PASSWORD, WEB_ADMIN_PASSWORD]:
+            session['logged_in'] = True
+            session['is_admin'] = (pw == WEB_ADMIN_PASSWORD)
+            return redirect(url_for('index'))
     return render_template('login.html')
 
-@app.route('/login', methods=['POST'])
-def login():
-    password = request.form.get('password')
-    if password == WEB_ADMIN_PASSWORD:
-        session['user_type'] = 'admin'
-        return redirect('/admin')
-    elif password == WEB_USER_PASSWORD:
-        session['user_type'] = 'user'
-        return redirect('/change-internet')
-    return redirect('/')
 
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect('/')
+    return redirect(url_for('login'))
 
-@app.route('/change-internet', methods=['GET', 'POST'])
-def change_internet():
-    if 'user_type' not in session or session['user_type'] != 'user':
-        return redirect('/')
-    
-    user_ip = request.remote_addr
-    if not allowed_ip(user_ip):
-        return "IP not allowed"
-
-    if request.method == 'POST':
-        selected_interface = request.form.get('interface')
-        mark = INTERFACE_MARKS.get(selected_interface, DEFAULT_ROUTING_MARK)
-        try:
-            api = mikrotik_connect()
-            firewall = api.get_resource('/ip/firewall/mangle')
-            rules = firewall.get()
-            for rule in rules:
-                if 'src-address' in rule and rule['src-address'] == user_ip:
-                    firewall.update(id=rule['id'], new_routing_mark=mark)
-                    break
-            else:
-                firewall.add(chain="prerouting", action="mark-routing", new_routing_mark=mark,
-                             passthrough="yes", src_address=user_ip)
-        except Exception as e:
-            return f"Error: {e}"
-        return redirect('/change-internet')
-
-    return render_template('change_internet.html', interfaces=INTERFACE_MARKS)
 
 @app.route('/admin')
-def admin_panel():
-    if 'user_type' not in session or session['user_type'] != 'admin':
-        return redirect('/')
+def admin():
+    if not is_logged_in() or not session.get('is_admin'):
+        return redirect(url_for('login'))
+    # TODO: افزودن لیست کاربران و اینترنت فعلی‌شان
     return render_template('admin.html')
 
-@app.route('/user-status')
+
+@app.route('/change_internet', methods=['GET', 'POST'])
+def change_internet():
+    if not is_logged_in():
+        return redirect(url_for('login'))
+    # TODO: پیاده‌سازی تغییر اینترنت برای آی‌پی کاربر
+    return render_template('change_internet.html')
+
+
+@app.route('/user_status')
 def user_status():
-    if 'user_type' not in session:
-        return redirect('/')
-    user_ip = request.remote_addr
-    if not allowed_ip(user_ip):
-        return "IP not allowed"
-    try:
-        api = mikrotik_connect()
-        firewall = api.get_resource('/ip/firewall/mangle')
-        rules = firewall.get()
-        for rule in rules:
-            if 'src-address' in rule and rule['src-address'] == user_ip:
-                return render_template('user_status.html', rule=rule)
-    except Exception as e:
-        return f"Error: {e}"
-    return "No rule found"
+    if not is_logged_in():
+        return redirect(url_for('login'))
+    # TODO: بررسی اینکه کاربر به کدام اینترنت متصل است
+    return render_template('user_status.html')
 
-@app.route('/check-api')
-def check_api():
-    try:
-        api = mikrotik_connect()
-        identity = api.get_resource('/system/identity').get()
-        return f"Connected to MikroTik: {identity[0]['name']}"
-    except Exception as e:
-        return f"Error connecting to MikroTik API: {str(e)}"
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv('WEB_PORT', 5000)))
+@app.route('/about')
+def about():
+    return render_template('about.html')
