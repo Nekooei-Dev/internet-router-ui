@@ -83,28 +83,96 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.route('/admin')
+@app.route('/admin', methods=['GET', 'POST'])
 def admin():
     if not is_logged_in() or not session.get('is_admin'):
         return redirect(url_for('login'))
-    # TODO: افزودن لیست کاربران و اینترنت فعلی‌شان
-    return render_template('admin.html')
+
+    api, pool = get_api()
+    mangle_list = []
+    if api:
+        mangle_resource = api.get_resource('/ip/firewall/mangle')
+        rules = mangle_resource.get()
+        for rule in rules:
+            if rule.get('action') == 'mark-routing':
+                mangle_list.append({
+                    'id': rule['.id'],
+                    'src-address': rule.get('src-address'),
+                    'routing-mark': rule.get('new-routing-mark'),
+                    'comment': rule.get('comment', '')
+                })
+        pool.disconnect()
+    return render_template('admin.html', mangle_list=mangle_list)
+
+
+@app.route('/admin/delete/<rule_id>')
+def delete_rule(rule_id):
+    if not is_logged_in() or not session.get('is_admin'):
+        return redirect(url_for('login'))
+
+    api, pool = get_api()
+    if api:
+        mangle_resource = api.get_resource('/ip/firewall/mangle')
+        try:
+            mangle_resource.remove(id=rule_id)
+            flash('قانون با موفقیت حذف شد.', 'success')
+        except Exception as e:
+            flash(f'خطا در حذف: {e}', 'danger')
+        pool.disconnect()
+    return redirect(url_for('admin'))
+
 
 
 @app.route('/change_internet', methods=['GET', 'POST'])
 def change_internet():
     if not is_logged_in():
         return redirect(url_for('login'))
-    # TODO: پیاده‌سازی تغییر اینترنت برای آی‌پی کاربر
-    return render_template('change_internet.html')
+
+    user_ip = request.remote_addr
+
+    if request.method == 'POST':
+        selected_internet = request.form.get('internet')
+        comment = f"User changed to {selected_internet}"
+        api, pool = get_api()
+        if api:
+            mangle_resource = api.get_resource('/ip/firewall/mangle')
+            mangle_resource.add(
+                chain='prerouting',
+                src_address=user_ip,
+                action='mark-routing',
+                new_routing_mark=selected_internet,
+                comment=comment
+            )
+            pool.disconnect()
+            flash('اینترنت شما با موفقیت تغییر یافت', 'success')
+            return redirect(url_for('user_status'))
+
+    # فرضاً اینترنت‌های قابل انتخاب:
+    options = ['To-ADSL', 'To-SIM', 'To-Fiber']
+
+    return render_template('change_internet.html', options=options)
+
 
 
 @app.route('/user_status')
 def user_status():
     if not is_logged_in():
         return redirect(url_for('login'))
-    # TODO: بررسی اینکه کاربر به کدام اینترنت متصل است
-    return render_template('user_status.html')
+
+    user_ip = request.remote_addr
+    current_internet = 'پیش‌فرض'
+
+    api, pool = get_api()
+    if api:
+        mangle_resource = api.get_resource('/ip/firewall/mangle')
+        rules = mangle_resource.get()
+        for rule in rules:
+            if rule.get('src-address') == user_ip and rule.get('action') == 'mark-routing':
+                current_internet = rule.get('new-routing-mark')
+        pool.disconnect()
+
+    return render_template('user_status.html', current_internet=current_internet)
+
 
 
 @app.route('/about')
