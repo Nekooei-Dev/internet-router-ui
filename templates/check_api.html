@@ -1,8 +1,5 @@
-{% extends "layout.html" %}
+{% extends 'layout.html' %}
 {% block content %}
-<div class="mt-4">
-    <h4>وضعیت اتصال به MikroTik</h4>
-    <pre class="p-3 bg-light border rounded" style="white-space: pre-wrap;">{{ status }}</pre>
-    <a href="/" class="btn btn-secondary mt-3">بازگشت</a>
-</div>
+<h3 class="mb-4">وضعیت اتصال به MikroTik</h3>
+<div class="alert alert-info">{{ status_message }}</div>
 {% endblock %}
