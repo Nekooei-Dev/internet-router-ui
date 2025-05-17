@@ -1,32 +1,36 @@
 {% extends 'layout.html' %}
+{% block title %}مدیریت کاربران{% endblock %}
 {% block content %}
-<h3 class="mb-4">پنل مدیریت</h3>
-<div class="row">
-  <div class="col-md-6">
-    <div class="card mb-3">
-      <div class="card-header">تغییر مسیر پیش‌فرض</div>
-      <div class="card-body">
-        <form method="post" action="/admin/default-route">
-          <div class="mb-3">
-            <label for="default_route" class="form-label">مسیر پیش‌فرض</label>
-            <select class="form-select" id="default_route" name="default_route" required>
-              {% for key, value in interfaces.items() %}
-                <option value="{{ key }}" {% if key == current_default %}selected{% endif %}>{{ value }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <button type="submit" class="btn btn-primary">ذخیره</button>
-        </form>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card mb-3">
-      <div class="card-header">مدیریت لاگ‌ها</div>
-      <div class="card-body">
-        <a href="/admin/logs" class="btn btn-secondary">مشاهده لاگ‌ها</a>
-      </div>
-    </div>
-  </div>
-</div>
+<h2>📋 لیست کاربران</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>IP کاربر</th>
+            <th>اینترنت انتخابی (routing-mark)</th>
+            <th>توضیح</th>
+            <th>عملیات</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for rule in mangle_list %}
+        <tr>
+            <td>{{ rule.src-address }}</td>
+            <td>{{ rule.routing-mark }}</td>
+            <td>{{ rule.comment }}</td>
+            <td>
+                <a href="{{ url_for('delete_rule', rule_id=rule.id) }}" class="btn btn-sm btn-danger">🗑 حذف</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}
