@@ -1,8 +1,32 @@
-{% extends "layout.html" %}
+{% extends 'layout.html' %}
 {% block content %}
-<div class="mt-4">
-    <h4>مدیریت قوانین کاربران</h4>
-    <pre class="p-3 bg-light border rounded" style="white-space: pre-wrap;">{{ rules }}</pre>
-    <a href="/" class="btn btn-secondary mt-3">بازگشت</a>
+<h3 class="mb-4">پنل مدیریت</h3>
+<div class="row">
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-header">تغییر مسیر پیش‌فرض</div>
+      <div class="card-body">
+        <form method="post" action="/admin/default-route">
+          <div class="mb-3">
+            <label for="default_route" class="form-label">مسیر پیش‌فرض</label>
+            <select class="form-select" id="default_route" name="default_route" required>
+              {% for key, value in interfaces.items() %}
+                <option value="{{ key }}" {% if key == current_default %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">ذخیره</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-header">مدیریت لاگ‌ها</div>
+      <div class="card-body">
+        <a href="/admin/logs" class="btn btn-secondary">مشاهده لاگ‌ها</a>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
