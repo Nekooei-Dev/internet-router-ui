@@ -9,11 +9,11 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'secret')
 
-# تنظیمات اتصال به میکروتیک
+# ENV config
 API_HOST = os.getenv('API_HOST', '172.30.30.254')
 API_USER = os.getenv('API_USER', 'API')
 API_PASS = os.getenv('API_PASS', 'API')
-API_PORT = int(os.getenv('API_PORT', 8728))  # توجه: پورت API معمولاً 8728 است نه 22
+API_PORT = int(os.getenv('API_PORT', 8728))
 USE_SSL = os.getenv('API_USE_SSL', 'false').lower() == 'true'
 
 WEB_USER_PASSWORD = os.getenv('WEB_USER_PASSWORD', '123456')
@@ -70,7 +70,7 @@ def logout():
 def change_internet():
     if 'user_type' not in session or session['user_type'] != 'user':
         return redirect('/')
-
+    
     user_ip = request.remote_addr
     if not allowed_ip(user_ip):
         return "IP not allowed"
@@ -87,13 +87,8 @@ def change_internet():
                     firewall.update(id=rule['id'], new_routing_mark=mark)
                     break
             else:
-                firewall.add(
-                    chain="prerouting",
-                    action="mark-routing",
-                    new_routing_mark=mark,
-                    passthrough="yes",
-                    src_address=user_ip
-                )
+                firewall.add(chain="prerouting", action="mark-routing", new_routing_mark=mark,
+                             passthrough="yes", src_address=user_ip)
         except Exception as e:
             return f"Error: {e}"
         return redirect('/change-internet')
@@ -134,5 +129,4 @@ def check_api():
         return f"Error connecting to MikroTik API: {str(e)}"
 
 if __name__ == '__main__':
-    port = int(os.getenv('WEB_PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.getenv('WEB_PORT', 5000)))
