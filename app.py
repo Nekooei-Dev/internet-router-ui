@@ -1,10 +1,8 @@
 import os
 from flask import Flask, render_template, request, redirect, session
-from dotenv import load_dotenv
 from ipaddress import ip_network, ip_address
 from routeros_api import RouterOsApiPool
 
-load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'secret')
