@@ -1,14 +1,6 @@
 {% extends 'layout.html' %}
+{% block title %}وضعیت اینترنت{% endblock %}
 {% block content %}
-<h3 class="mb-4">وضعیت اتصال شما</h3>
-{% if rule %}
-  <div class="card">
-    <div class="card-body">
-      <p><strong>آدرس IP:</strong> {{ rule['src-address'] }}</p>
-      <p><strong>مسیر فعلی:</strong> {{ rule['new-routing-mark'] }}</p>
-    </div>
-  </div>
-{% else %}
-  <div class="alert alert-warning">هیچ قانونی برای IP شما یافت نشد.</div>
-{% endif %}
+<h2>🔎 وضعیت اینترنت شما</h2>
+<p>در حال حاضر اینترنت شما: <strong>{{ current_internet }}</strong></p>
 {% endblock %}
