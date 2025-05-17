@@ -1,20 +1,19 @@
 {% extends 'layout.html' %}
-{% block title %}خانه{% endblock %}
+{% block title %}صفحه اصلی{% endblock %}
 {% block content %}
-<h1>👋 خوش آمدید</h1>
-<p>از اینجا می‌توانید اینترنت خود را مدیریت کنید.</p>
 
-<div class="alert {{ 'alert-success' if api_ok else 'alert-danger' }}">
-    <i class="fas {{ 'fa-circle-check' if api_ok else 'fa-circle-xmark' }}"></i>
-    وضعیت اتصال به میکروتیک: {{ 'متصل' if api_ok else 'قطع' }}
+<div class="text-center mt-5">
+    <h1>🎉 خوش آمدید</h1>
+    <p class="lead">از اینجا می‌توانید اینترنت خود را مدیریت کنید</p>
+    
+    <div class="d-grid gap-2 col-6 mx-auto mt-4">
+        <a href="{{ url_for('change_internet') }}" class="btn btn-primary">📶 تغییر اینترنت</a>
+        <a href="{{ url_for('user_status') }}" class="btn btn-info">🔍 وضعیت اینترنت</a>
+        {% if session.get('is_admin') %}
+        <a href="{{ url_for('admin') }}" class="btn btn-warning">🛠 مدیریت کاربران</a>
+        {% endif %}
+        <a href="{{ url_for('about') }}" class="btn btn-secondary">👤 درباره ما</a>
+    </div>
 </div>
 
-<ul>
-    <li><a href="/change_internet">تغییر اینترنت</a></li>
-    <li><a href="/user_status">وضعیت اینترنت من</a></li>
-    {% if session.is_admin %}
-    <li><a href="/admin">مدیریت کاربران</a></li>
-    {% endif %}
-    <li><a href="/about">درباره من</a></li>
-</ul>
 {% endblock %}
