@@ -1,28 +1,15 @@
-{% extends "layout.html" %}
+{% extends 'layout.html' %}
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow-sm">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">تغییر مسیر اینترنت</h5>
-            </div>
-            <div class="card-body">
-                {% if message %}
-                    <div class="alert alert-info">{{ message }}</div>
-                {% endif %}
-                <form method="post">
-                    <div class="mb-3">
-                        <label for="inet" class="form-label">انتخاب اینترنت</label>
-                        <select name="inet" id="inet" class="form-select">
-                            {% for key, value in interfaces.items() %}
-                                <option value="{{ key }}">اینترنت {{ key }} - {{ value }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-success w-100">ذخیره تغییرات</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+<h3 class="mb-4">تغییر مسیر اینترنت</h3>
+<form method="post">
+  <div class="mb-3">
+    <label for="interface" class="form-label">انتخاب مسیر</label>
+    <select class="form-select" id="interface" name="interface" required>
+      {% for key, value in interfaces.items() %}
+        <option value="{{ key }}">{{ value }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-success">اعمال تغییر</button>
+</form>
 {% endblock %}
