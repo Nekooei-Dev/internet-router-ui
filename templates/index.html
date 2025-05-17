@@ -1,14 +1,5 @@
-{% extends "layout.html" %}
+{% extends 'layout.html' %}
 {% block content %}
-<div class="text-center mt-5">
-    <h2>👋 خوش آمدید</h2>
-    <p class="lead">از منوی بالا برای بررسی وضعیت یا تغییر اینترنت استفاده کنید.</p>
-    <div class="d-flex justify-content-center gap-3 mt-4">
-        <a href="/user_status" class="btn btn-outline-primary">بررسی وضعیت</a>
-        <a href="/change_internet" class="btn btn-outline-success">تغییر اینترنت</a>
-        {% if session.get('role') == 'admin' %}
-            <a href="/admin" class="btn btn-outline-danger">مدیریت</a>
-        {% endif %}
-    </div>
-</div>
+<h3 class="mb-4">خوش آمدید</h3>
+<p>لطفاً برای ادامه وارد شوید.</p>
 {% endblock %}
