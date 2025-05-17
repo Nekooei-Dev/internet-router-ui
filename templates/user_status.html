@@ -1,8 +1,14 @@
-{% extends "layout.html" %}
+{% extends 'layout.html' %}
 {% block content %}
-<div class="mt-4">
-    <h4>وضعیت اینترنت شما</h4>
-    <pre class="p-3 bg-light border rounded" style="white-space: pre-wrap;">{{ routing_mark }}</pre>
-    <a href="/" class="btn btn-secondary mt-3">بازگشت</a>
-</div>
+<h3 class="mb-4">وضعیت اتصال شما</h3>
+{% if rule %}
+  <div class="card">
+    <div class="card-body">
+      <p><strong>آدرس IP:</strong> {{ rule['src-address'] }}</p>
+      <p><strong>مسیر فعلی:</strong> {{ rule['new-routing-mark'] }}</p>
+    </div>
+  </div>
+{% else %}
+  <div class="alert alert-warning">هیچ قانونی برای IP شما یافت نشد.</div>
+{% endif %}
 {% endblock %}
