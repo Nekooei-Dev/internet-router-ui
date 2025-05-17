@@ -174,6 +174,20 @@ def user_status():
     return render_template('user_status.html', current_internet=current_internet)
 
 
+@app.context_processor
+def inject_api_status():
+    def check_api_connection():
+        try:
+            api, pool = get_api()
+            if api:
+                pool.disconnect()
+                return True
+        except:
+            return False
+        return False
+    return dict(check_api_connection=check_api_connection)
+
+
 
 @app.route('/about')
 def about():
