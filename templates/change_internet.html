@@ -1,17 +1,21 @@
-{% extends 'layout.html' %}
-{% block title %}تغییر اینترنت{% endblock %}
-{% block content %}
-<h2>🌐 تغییر اینترنت</h2>
+{% extends "layout.html" %}
 
-<form method="post">
-    <div class="mb-3">
-        <label>انتخاب اینترنت</label>
-        <select class="form-select" name="internet">
-            {% for item in options %}
-                <option value="{{ item }}">{{ item }}</option>
+{% block title %}تغییر مسیر اینترنت{% endblock %}
+
+{% block content %}
+<h3 class="mb-4 text-center"><i class="fas fa-random"></i> انتخاب مسیر اینترنت</h3>
+
+<form method="POST" class="text-center">
+    <div class="mb-4">
+        <label for="internet" class="form-label">لطفاً مسیر دلخواه خود را انتخاب کنید:</label>
+        <select name="internet" id="internet" class="form-select text-center w-50 mx-auto" required>
+            {% for opt in options %}
+                <option value="{{ opt }}">{{ opt }}</option>
             {% endfor %}
         </select>
     </div>
-    <button class="btn btn-primary">ثبت</button>
+    <button type="submit" class="btn btn-primary">
+        <i class="fas fa-exchange-alt"></i> اعمال مسیر جدید
+    </button>
 </form>
 {% endblock %}
