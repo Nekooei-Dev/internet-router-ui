@@ -1,9 +1,29 @@
-{% extends 'layout.html' %}
-{% block title %}ورود{% endblock %}
+{% extends "layout.html" %}
+
+{% block title %}ورود | مدیریت اینترنت{% endblock %}
+
 {% block content %}
-<h2>🔐 ورود</h2>
-<form method="post">
-    <input type="password" name="password" class="form-control" placeholder="رمز عبور">
-    <button class="btn btn-primary mt-2">ورود</button>
-</form>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center">
+                <h4><i class="fas fa-sign-in-alt"></i> ورود به سیستم</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="password" class="form-label">رمز عبور</label>
+                        <input type="password" name="password" id="password" class="form-control" required>
+                    </div>
+                    {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-lock"></i> ورود
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
