@@ -22,14 +22,18 @@ ALLOWED_NETWORKS = os.environ.get("ALLOWED_NETWORKS", "").split(",")
 
 def is_ip_allowed(ip):
     for net in ALLOWED_NETWORKS:
-        if '-' in net:
-            start, end = net.split('-')
-            if ipaddress.IPv4Address(start) <= ipaddress.IPv4Address(ip) <= ipaddress.IPv4Address(end):
-                return True
-        else:
-            if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(net, strict=False):
-                return True
+        try:
+            if '-' in net:
+                start, end = net.split('-')
+                if ipaddress.IPv4Address(start) <= ipaddress.IPv4Address(ip) <= ipaddress.IPv4Address(end):
+                    return True
+            else:
+                if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(net, strict=False):
+                    return True
+        except Exception as e:
+            print(f"[WARNING] IP check error for {net}: {e}")
     return False
+
 
 
 @app.before_request
@@ -49,12 +53,13 @@ def get_api():
         )
         return pool.get_api(), pool
     except Exception as e:
-        print("API connection error:", e)
+        print(f"[ERROR] اتصال به MikroTik برقرار نشد: {e}")
         return None, None
 
 
 def is_logged_in():
     return 'logged_in' in session
+
 
 
 @app.route('/', methods=['GET'])
@@ -66,21 +71,27 @@ def index():
     return render_template('index.html', api_ok=api_ok)
 
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    error = None
     if request.method == 'POST':
         pw = request.form.get('password')
         if pw in [WEB_USER_PASSWORD, WEB_ADMIN_PASSWORD]:
             session['logged_in'] = True
             session['is_admin'] = (pw == WEB_ADMIN_PASSWORD)
             return redirect(url_for('index'))
-    return render_template('login.html')
+        else:
+            error = 'رمز عبور اشتباه است'
+    return render_template('login.html', error=error)
+
 
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
 
 
 @app.route('/admin', methods=['GET', 'POST'])
@@ -91,18 +102,24 @@ def admin():
     api, pool = get_api()
     mangle_list = []
     if api:
-        mangle_resource = api.get_resource('/ip/firewall/mangle')
-        rules = mangle_resource.get()
-        for rule in rules:
-            if rule.get('action') == 'mark-routing':
-                mangle_list.append({
-                    'id': rule['.id'],
-                    'src-address': rule.get('src-address'),
-                    'routing-mark': rule.get('new-routing-mark'),
-                    'comment': rule.get('comment', '')
-                })
+        try:
+            mangle_resource = api.get_resource('/ip/firewall/mangle')
+            rules = mangle_resource.get()
+            for rule in rules:
+                if rule.get('action') == 'mark-routing':
+                    mangle_list.append({
+                        'id': rule['.id'],
+                        'src-address': rule.get('src-address'),
+                        'routing-mark': rule.get('new-routing-mark'),
+                        'comment': rule.get('comment', '')
+                    })
+        except Exception as e:
+            flash(f'خطا در دریافت لیست قوانین: {e}', 'danger')
         pool.disconnect()
+    else:
+        flash('اتصال به روتر برقرار نشد.', 'danger')
     return render_template('admin.html', mangle_list=mangle_list)
+
 
 
 @app.route('/admin/delete/<rule_id>')
@@ -112,13 +129,15 @@ def delete_rule(rule_id):
 
     api, pool = get_api()
     if api:
-        mangle_resource = api.get_resource('/ip/firewall/mangle')
         try:
+            mangle_resource = api.get_resource('/ip/firewall/mangle')
             mangle_resource.remove(id=rule_id)
             flash('قانون با موفقیت حذف شد.', 'success')
         except Exception as e:
             flash(f'خطا در حذف: {e}', 'danger')
         pool.disconnect()
+    else:
+        flash('اتصال به روتر برقرار نشد.', 'danger')
     return redirect(url_for('admin'))
 
 
@@ -135,21 +154,24 @@ def change_internet():
         comment = f"User changed to {selected_internet}"
         api, pool = get_api()
         if api:
-            mangle_resource = api.get_resource('/ip/firewall/mangle')
-            mangle_resource.add(
-                chain='prerouting',
-                src_address=user_ip,
-                action='mark-routing',
-                new_routing_mark=selected_internet,
-                comment=comment
-            )
+            try:
+                mangle_resource = api.get_resource('/ip/firewall/mangle')
+                mangle_resource.add(
+                    chain='prerouting',
+                    src_address=user_ip,
+                    action='mark-routing',
+                    new_routing_mark=selected_internet,
+                    comment=comment
+                )
+                flash('اینترنت شما با موفقیت تغییر یافت', 'success')
+            except Exception as e:
+                flash(f'خطا در تغییر اینترنت: {e}', 'danger')
             pool.disconnect()
-            flash('اینترنت شما با موفقیت تغییر یافت', 'success')
-            return redirect(url_for('user_status'))
+        else:
+            flash('اتصال به روتر برقرار نشد.', 'danger')
+        return redirect(url_for('user_status'))
 
-    # فرضاً اینترنت‌های قابل انتخاب:
     options = ['To-ADSL', 'To-SIM', 'To-Fiber']
-
     return render_template('change_internet.html', options=options)
 
 
@@ -164,14 +186,20 @@ def user_status():
 
     api, pool = get_api()
     if api:
-        mangle_resource = api.get_resource('/ip/firewall/mangle')
-        rules = mangle_resource.get()
-        for rule in rules:
-            if rule.get('src-address') == user_ip and rule.get('action') == 'mark-routing':
-                current_internet = rule.get('new-routing-mark')
+        try:
+            mangle_resource = api.get_resource('/ip/firewall/mangle')
+            rules = mangle_resource.get()
+            for rule in rules:
+                if rule.get('src-address') == user_ip and rule.get('action') == 'mark-routing':
+                    current_internet = rule.get('new-routing-mark')
+        except Exception as e:
+            flash(f'خطا در بازیابی وضعیت اینترنت: {e}', 'danger')
         pool.disconnect()
+    else:
+        flash('اتصال به روتر برقرار نشد.', 'danger')
 
     return render_template('user_status.html', current_internet=current_internet)
+
 
 
 @app.context_processor
