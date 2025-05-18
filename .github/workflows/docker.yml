@@ -1,4 +1,4 @@
-name: Build and Push MikroTik UI (Single-Arch hap ac3)
+name: Build and Push MikroTik UI (Multi-Arch)
 
 on:
   push:
@@ -45,10 +45,10 @@ jobs:
         id: vars
         run: echo "tag=$(date +'%Y%m%d%H%M')" >> $GITHUB_OUTPUT
 
-      - name: Build and Push (Single-Arch hap ac3)
+      - name: Build and Push (Multi-Arch)
         run: |
           docker buildx build \
-            --platform linux/arm/v7 \
+            --platform linux/amd64,linux/arm64,linux/arm/v7 \
             --push \
             --cache-from=type=local,src=/tmp/.buildx-cache \
             --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
