@@ -1,19 +1,25 @@
-{% extends 'layout.html' %}
-{% block title %}صفحه اصلی{% endblock %}
+{% extends "layout.html" %}
+
+{% block title %}خانه | مدیریت اینترنت{% endblock %}
+
 {% block content %}
+<div class="text-center py-5">
+    <h1 class="display-5 mb-4"><i class="fas fa-home"></i> خوش آمدید</h1>
 
-<div class="text-center mt-5">
-    <h1>🎉 خوش آمدید</h1>
-    <p class="lead">از اینجا می‌توانید اینترنت خود را مدیریت کنید</p>
-    
-    <div class="d-grid gap-2 col-6 mx-auto mt-4">
-        <a href="{{ url_for('change_internet') }}" class="btn btn-primary">📶 تغییر اینترنت</a>
-        <a href="{{ url_for('user_status') }}" class="btn btn-info">🔍 وضعیت اینترنت</a>
-        {% if session.get('is_admin') %}
-        <a href="{{ url_for('admin') }}" class="btn btn-warning">🛠 مدیریت کاربران</a>
-        {% endif %}
-        <a href="{{ url_for('about') }}" class="btn btn-secondary">👤 درباره ما</a>
-    </div>
+    {% if check_api_connection() %}
+        <p class="text-success"><i class="fas fa-check-circle"></i> اتصال به روتر برقرار است.</p>
+    {% else %}
+        <p class="text-danger"><i class="fas fa-times-circle"></i> اتصال به روتر برقرار نیست.</p>
+    {% endif %}
+
+    {% if session.get('logged_in') %}
+        <a href="{{ url_for('change_internet') }}" class="btn btn-primary mt-3">
+            <i class="fas fa-random"></i> تغییر مسیر اینترنت
+        </a>
+    {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-success mt-3">
+            <i class="fas fa-sign-in-alt"></i> ورود به سیستم
+        </a>
+    {% endif %}
 </div>
-
 {% endblock %}
