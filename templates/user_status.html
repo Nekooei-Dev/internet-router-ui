@@ -1,6 +1,10 @@
-{% extends 'layout.html' %}
-{% block title %}وضعیت اینترنت{% endblock %}
+{% extends "layout.html" %}
+
+{% block title %}وضعیت اینترنت من{% endblock %}
+
 {% block content %}
-<h2>🔎 وضعیت اینترنت شما</h2>
-<p>در حال حاضر اینترنت شما: <strong>{{ current_internet }}</strong></p>
+<div class="text-center py-5">
+    <h4><i class="fas fa-info-circle"></i> وضعیت فعلی اینترنت شما:</h4>
+    <h2 class="text-primary mt-3">{{ current_internet }}</h2>
+</div>
 {% endblock %}
