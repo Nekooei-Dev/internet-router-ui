@@ -1,0 +1,15 @@
+body {
+    font-family: 'IRANSans', 'Tahoma', sans-serif;
+}
+
+h1, h2, h3, h4 {
+    color: #003366;
+}
+
+.btn {
+    font-weight: bold;
+}
+
+.table th, .table td {
+    vertical-align: middle;
+}
