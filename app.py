@@ -3,6 +3,7 @@ import os
 import routeros_api
 import ipaddress
 
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "defaultsecret")
 
