@@ -22,8 +22,7 @@ def user_panel():
         mangles = mangle_resource.get()
         mangle_map = {m["comment"]: m.get("new-routing-mark", "دیفالت") for m in mangles if "comment" in m}
 
-        # فرض می‌کنیم کاربر می‌خواهد اطلاعات خودش را ببیند
-        # باید IP خودش را پیدا کنیم (اینجا ساده: اولین آی‌پی DHCP)
+        # ساده‌ترین حالت: اولین آی‌پی DHCP را کاربر فرض می‌کنیم
         user_ip = None
         if leases:
             user_ip = leases[0].get("address")
