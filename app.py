@@ -1,6 +1,6 @@
 import os
-import ipaddress
 import logging
+import ipaddress
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, abort
 from routeros_api import RouterOsApiPool, ApiException
 
@@ -22,12 +22,12 @@ WEB_ADMIN_PASSWORD = os.environ.get("WEB_ADMIN_PASSWORD", "123456789")
 # شبکه‌های مجاز
 ALLOWED_NETWORKS = os.environ.get("ALLOWED_NETWORKS", "172.30.30.0/24 , 172.32.30.10-172.32.30.40 , 192.168.1.10").split(",")
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def is_ip_allowed(ip):
     for net in ALLOWED_NETWORKS:
+        net = net.strip()
         try:
-            net = net.strip()
             if '-' in net:
                 start, end = net.split('-')
                 if ipaddress.IPv4Address(start) <= ipaddress.IPv4Address(ip) <= ipaddress.IPv4Address(end):
@@ -36,7 +36,7 @@ def is_ip_allowed(ip):
                 if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(net, strict=False):
                     return True
         except Exception as e:
-            logging.warning(f"[IP_CHECK] Invalid range '{net}': {e}")
+            logging.warning(f"IP check error for {net}: {e}")
     return False
 
 def get_client_ip():
@@ -53,16 +53,17 @@ def get_api_connection():
             use_ssl=False,
             ssl_verify=False
         )
-        return connection.get_api(), connection
+        api = connection.get_api()
+        return api, connection
     except ApiException as e:
-        logging.error(f"[API] Connection failed: {e}")
+        logging.error(f"API connection error: {e}")
         return None, None
 
 @app.before_request
-def check_ip_allowed():
+def check_ip():
     ip = get_client_ip()
     if not is_ip_allowed(ip):
-        logging.warning(f"[ACCESS] Denied for IP: {ip}")
+        logging.warning(f"Access denied for IP: {ip}")
         abort(403)
 
 @app.route('/')
@@ -71,11 +72,11 @@ def index():
         return redirect(url_for('login'))
     api, conn = get_api_connection()
     if not api:
-        return render_template('error.html', message="MikroTik connection failed.")
+        return render_template("error.html", message="خطا در اتصال به میکروتیک")
     try:
         mangle_rules = api.get_resource('/ip/firewall/mangle').get()
     except Exception as e:
-        logging.error(f"[MANGLE] Fetch error: {e}")
+        logging.error(f"Error fetching mangle rules: {e}")
         mangle_rules = []
     finally:
         conn.disconnect()
@@ -89,7 +90,8 @@ def login():
             session['logged_in'] = True
             session['is_admin'] = (password == WEB_ADMIN_PASSWORD)
             return redirect(url_for('index'))
-        return render_template('login.html', error="رمز عبور نادرست است.")
+        else:
+            return render_template('login.html', error="رمز عبور اشتباه است")
     return render_template('login.html')
 
 @app.route('/logout')
@@ -103,12 +105,12 @@ def admin():
         return redirect(url_for('login'))
     api, conn = get_api_connection()
     if not api:
-        return render_template('error.html', message="MikroTik connection failed.")
+        return render_template("error.html", message="خطا در اتصال به میکروتیک")
     try:
         users = api.get_resource('/ip/hotspot/user').get()
         profiles = api.get_resource('/ip/hotspot/user/profile').get()
     except Exception as e:
-        logging.error(f"[ADMIN] Data fetch error: {e}")
+        logging.error(f"Error fetching admin data: {e}")
         users, profiles = [], []
     finally:
         conn.disconnect()
@@ -118,7 +120,7 @@ def admin():
 def change_internet():
     if not session.get('logged_in'):
         return jsonify({"error": "Not authenticated"}), 401
-    data = request.json
+    data = request.get_json()
     user_id = data.get('id')
     action = data.get('action')
     api, conn = get_api_connection()
@@ -133,7 +135,7 @@ def change_internet():
         else:
             return jsonify({"error": "Invalid action"}), 400
     except Exception as e:
-        logging.error(f"[HOTSPOT] Status change error: {e}")
+        logging.error(f"Error changing user status: {e}")
         return jsonify({"error": "Operation failed"}), 500
     finally:
         conn.disconnect()
@@ -150,7 +152,7 @@ def user_status(user_id):
         users = api.get_resource('/ip/hotspot/user').get()
         user = next((u for u in users if u['.id'] == user_id), None)
     except Exception as e:
-        logging.error(f"[STATUS] Fetch user error: {e}")
+        logging.error(f"Error fetching user status: {e}")
         user = None
     finally:
         conn.disconnect()
@@ -161,3 +163,6 @@ def user_status(user_id):
 @app.route('/about')
 def about():
     return render_template('about.html')
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
