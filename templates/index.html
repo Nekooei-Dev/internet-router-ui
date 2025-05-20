@@ -11,4 +11,26 @@
 <body class="bg-white">
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <div class="container-fluid">
-        <a class="navbar-brand" href
+        <a class="navbar-brand" href="{{ url_for('index') }}">مدیریت اینترنت</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">درباره</a></li>
+            {% if role == 'admin' %}
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin') }}">مدیریت</a></li>
+            {% elif role == 'user' %}
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('user') }}">کاربر</a></li>
+            {% endif %}
+          </ul>
+          <ul class="navbar-nav">
+            <li class="nav-item"><a class="nav-link text-danger" href="{{ url_for('logout') }}">خروج</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <main class="container mt-4">
+        <h2>خوش آمدید</h2>
+        <p>شما وارد سیستم با نقش <strong>{{ role }}</strong> شده‌اید.</p>
+    </main>
+    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+</body>
+</html>
