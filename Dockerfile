@@ -1,8 +1,8 @@
 # پایه سبک
-FROM python:3.11-alpine
+FROM python:3.13-alpine
 
 # نصب وابستگی‌ها
-RUN apk add --no-cache gcc musl-dev libffi-dev
+RUN apk add --no-cache build-base libffi-dev
 
 # محل پروژه
 WORKDIR /app
