@@ -5,7 +5,7 @@ from flask import (
     Flask, render_template, request, redirect, url_for,
     session, jsonify, abort
 )
-from routeros_api import RouterOsApiPool, Exceptions
+from routeros_api import RouterOsApiPool, exceptions
 
 app = Flask(__name__)
 
@@ -83,7 +83,7 @@ def get_api_connection():
         )
         api = connection.get_api()
         return api, connection
-    except Exceptions as e:
+    except exceptions as e:
         logging.error(f"API connection error: {e}")
         return None, None
 
