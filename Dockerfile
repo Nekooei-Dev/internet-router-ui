@@ -1,26 +1,20 @@
-# مرحله 1: ساخت ایمیج در محیط کامل
-FROM python:3.9.17-alpine AS builder
+# پایه سبک
+FROM python:3.11-alpine
 
+# نصب وابستگی‌ها
+RUN apk add --no-cache gcc musl-dev libffi-dev
+
+# محل پروژه
 WORKDIR /app
 
-# نصب ابزارهای موردنیاز برای ساخت پکیج‌ها (در مرحله ساخت)
-RUN apk add --no-cache build-base
-
+# کپی فایل‌ها
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# نصب پکیج‌ها با حذف کش
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
-
-# مرحله 2: اجرای نهایی فقط با پایتون و پکیج‌های نصب‌شده
-FROM python:3.9.17-alpine
-
-WORKDIR /app
-
-# فقط پوشه نصب‌شده رو از مرحله قبل کپی می‌کنیم
-COPY --from=builder /install /usr/local
+# کپی کل پروژه
 COPY . .
 
-# باز کردن پورت
+# پورت مورد استفاده
 EXPOSE 5000
 
 # اجرای اپ
