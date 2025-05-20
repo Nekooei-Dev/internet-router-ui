@@ -66,7 +66,6 @@ def admin_panel():
                 else:
                     flash("اینترنت دیفالت نامعتبر است.", "danger")
 
-            # بروز رسانی مجدد بعد از تغییر
             leases = api.get_resource("/ip/dhcp-server/lease").get()
             mangles = mangle_resource.get()
             mangle_map = {m["comment"]: m.get("new-routing-mark", "دیفالت") for m in mangles if "comment" in m}
