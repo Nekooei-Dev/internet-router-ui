@@ -1,0 +1,15 @@
+body {
+    font-family: 'Vazirmatn', sans-serif;
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+h2, h4 {
+    margin-bottom: 1rem;
+}
+
+.table th, .table td {
+    vertical-align: middle;
+}
