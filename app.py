@@ -60,7 +60,7 @@ def get_api_connection():
         return None, None
 
 @app.before_request
-def check_ip():
+def check_ip_allowed():
     ip = get_client_ip()
     if not is_ip_allowed(ip):
         logging.warning(f"Access denied for IP: {ip}")
