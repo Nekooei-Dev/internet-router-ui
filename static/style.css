@@ -1,15 +1,92 @@
+/* style.css - استایل سفارشی */
+
 body {
-    font-family: 'Vazir', sans-serif;
+    font-family: "Vazir", Tahoma, sans-serif;
+    background-color: #f8f9fa; /* پس‌زمینه روشن */
+    color: #333;
+    direction: rtl; /* راست‌چین */
 }
 
-h1, h2, h3, h4 {
-    color: #003366;
-}
-
-.btn {
+.navbar-brand {
     font-weight: bold;
+    font-size: 1.5rem;
+    letter-spacing: 0.05em;
 }
 
-.table th, .table td {
-    vertical-align: middle;
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Vazir", Tahoma, sans-serif;
+    font-weight: 600;
 }
+
+.table {
+    background-color: #fff;
+}
+
+.table thead {
+    background-color: #0d6efd; /* رنگ آبی بوسترپ */
+    color: white;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+    background-color: #e9ecef;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+.alert-danger {
+    font-weight: 500;
+}
+
+.badge.bg-success {
+    background-color: #198754 !important;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+/* فرم ورود */
+form {
+    font-size: 1rem;
+}
+
+/* برای ریسپانسیو بهتر */
+@media (max-width: 576px) {
+    .container {
+        padding: 0 15px;
+    }
+}
+
+/* لینک های ناوبری */
+.navbar-nav .nav-link {
+    color: white;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #cfe2ff;
+}
+
+/* فرم خطا */
+.alert {
+    direction: rtl;
+}
+
+/* برخی فونت‌ها برای وب فارسی */
+/* اگر فونت وازیر رو دارید، اضافه کنید یا از گوگل فونت استفاده کنید */
+@font-face {
+  font-family: 'Vazir';
+  src: url('/static/fonts/Vazir.woff2') format('woff2'),
+       url('/static/fonts/Vazir.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* ... می‌توانید فونت‌ها یا استایل‌های اختصاصی بیشتری اضافه کنید */
