@@ -35,35 +35,40 @@ def user_panel():
 
     api, api_pool = connect_api()
     try:
-        # 1. گرفتن لیست DHCP Lease ها و پیدا کردن اینترنت فعلی کاربر با IP
         leases = api.get_resource("/ip/dhcp-server/lease").get()
         user_lease = next((lease for lease in leases if lease.get("address") == user_ip), None)
         if not user_lease:
             flash("IP کاربر در DHCP Lease یافت نشد.", "warning")
             current_internet = "نامشخص"
         else:
-            # فرض کنیم مارک (mark) اینترنت کاربر تو فیلد comment یا به طریقی ذخیره شده
-            current_internet = user_lease.get("comment", "نامشخص")
+            # در نظر بگیر comment حاوی mark-routing است، اگر نه باید از جای دیگه بگیری
+            # می تونیم دنبال منگل با comment برابر IP بگردیم و mark-routing رو بگیریم
+            mangle_resource = api.get_resource("/ip/firewall/mangle")
+            mangles = mangle_resource.get(filter={"comment": user_ip})
+            if mangles:
+                current_internet = mangles[0].get("new-routing-mark", "نامشخص")
+            else:
+                current_internet = "نامشخص"
 
         if request.method == "POST":
             selected_internet = request.form.get("internet")
             if selected_internet not in ROUTING_TABLES.keys():
                 flash("اینترنت انتخاب شده نامعتبر است.", "danger")
             else:
-                # اینجا باید منگل (mangle) و روت رو به روز کنیم
-                # مثلا حذف مارک قبلی و اضافه مارک جدید بر اساس IP کاربر
-                # ساده ترین روش: حذف مارک قبلی و اضافه مارک جدید به IP کاربر
-                # فقط نمونه هست، باید با دقت API میکروتیک را تنظیم کرد
-
-                # حذف منگل قبلی
-                mangle_resource = api.get_resource("/ip/firewall/mangle")
+                # حذف منگل های قبلی برای IP کاربر
                 prev_mangles = mangle_resource.get(filter={"comment": user_ip})
                 for m in prev_mangles:
                     mangle_resource.remove(id=m[".id"])
 
                 # اضافه کردن منگل جدید
-                mangle_resource.add(chain="prerouting", action="mark-routing", new_routing_mark=selected_internet,
-                                    src_address=user_ip, comment=user_ip)
+                mangle_resource.add(
+                    chain="prerouting",
+                    action="mark-routing",
+                    new_routing_mark=selected_internet,
+                    src_address=user_ip,
+                    comment=user_ip,
+                    passthrough="yes"
+                )
 
                 flash(f"اینترنت شما به {ROUTING_TABLES[selected_internet]} تغییر یافت.", "success")
 
@@ -71,4 +76,3 @@ def user_panel():
         api_pool.disconnect()
 
     return render_template("user.html", current_internet=current_internet, routing_tables=ROUTING_TABLES)
-
