@@ -19,7 +19,6 @@ ALLOWED_NETWORKS = [net.strip() for net in os.environ.get(
     "172.30.30.0/24 , 172.32.30.10-172.32.30.40 , 192.168.1.10"
 ).split(",")]
 
-# تعریف تیبل های روتینگ (مانگل‌ها)
 ROUTING_TABLES = {
     "پیش فرض": "main",
     "همراه اول": "To-HamrahAval",
@@ -28,13 +27,13 @@ ROUTING_TABLES = {
     "تلفن فروشگاه": "To-ADSL",
 }
 
-# تعریف اینتر فیس ها
 interfaces = {
     "ایرانسل": "Ether1 - Irancell SIM Internet",
     "همراه اول": "Ether2 - MCI SIM Internet",
     "تلفن فروشگاه": "Ether3 - TCI ADSL Internet",
     "انتن وایرلس": "Ether4 - Asiatech Wireless Internet",
 }
+
 
 def connect_api():
     try:
@@ -44,46 +43,45 @@ def connect_api():
         print(f"API Connection Error: {e}")
         return None
 
+
 def get_dhcp_leases(api):
     try:
-        leases = api.get_resource('/ip/dhcp-server/lease').get()
-        return leases
+        return api.get_resource('/ip/dhcp-server/lease').get()
     except Exception as e:
         print(f"Error fetching DHCP leases: {e}")
         return []
 
+
 def get_routes(api):
     try:
-        routes = api.get_resource('/ip/route').get()
-        return routes
+        return api.get_resource('/ip/route').get()
     except Exception as e:
         print(f"Error fetching routes: {e}")
         return []
 
-def get_mangle_rules(api):
-    try:
-        mangle = api.get_resource('/ip/firewall/mangle').get()
-        return mangle
-    except Exception as e:
-        print(f"Error fetching mangle rules: {e}")
-        return []
 
 def get_default_route(api):
-    # فرض می‌کنیم default route یک روت با dst-address=0.0.0.0/0 و routing-table=main یا موارد دیگر است
     routes = get_routes(api)
     for r in routes:
         if r.get('dst-address') == '0.0.0.0/0':
             return r
     return None
 
+
+def remove_user_mangle(api, ip):
+    mangle_res = api.get_resource('/ip/firewall/mangle')
+    rules = mangle_res.get()
+    for rule in rules:
+        if rule.get('comment') == f"user:{ip}":
+            mangle_res.remove(id=rule['id'])
+
+
 def is_allowed_network(ip):
-    # این تابع می‌تواند با کتابخانه ipaddress برای بررسی IP داخل شبکه استفاده شود.
     import ipaddress
     ip_addr = ipaddress.ip_address(ip)
     for net in ALLOWED_NETWORKS:
         try:
             if "-" in net:
-                # محدوده IP مثل 172.32.30.10-172.32.30.40
                 start_ip, end_ip = net.split("-")
                 if ipaddress.ip_address(start_ip) <= ip_addr <= ipaddress.ip_address(end_ip):
                     return True
@@ -94,6 +92,7 @@ def is_allowed_network(ip):
         except Exception:
             continue
     return False
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -109,10 +108,12 @@ def login():
             flash("رمز عبور اشتباه است", "danger")
     return render_template('login.html')
 
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
 
 @app.route('/')
 def index():
@@ -121,11 +122,13 @@ def index():
     role = session['role']
     return render_template('index.html', role=role)
 
+
 @app.route('/about')
 def about():
     if 'role' not in session:
         return redirect(url_for('login'))
     return render_template('about.html')
+
 
 @app.route('/user', methods=['GET', 'POST'])
 def user():
@@ -140,28 +143,17 @@ def user():
         return render_template('error.html', message="آی‌پی شما مجاز نیست")
 
     leases = get_dhcp_leases(api)
-    user_lease = None
-    for lease in leases:
-        if lease.get('address') == user_ip:
-            user_lease = lease
-            break
+    user_lease = next((lease for lease in leases if lease.get('address') == user_ip), None)
+    tables = ROUTING_TABLES
 
-    tables = list(ROUTING_TABLES.values())
     if request.method == 'POST':
         selected_table = request.form.get('internet_table')
-        if selected_table not in tables:
+        if selected_table not in tables.values():
             flash("تیبل انتخابی نامعتبر است", "danger")
         else:
-            # اینجا منگل روتینگ را به IP کاربر تغییر می‌دهیم
             try:
-                # حذف منگل قبلی برای این IP
-                mangle_res = api.get_resource('/ip/firewall/mangle')
-                rules = mangle_res.get()
-                for rule in rules:
-                    if rule.get('comment') == f"user:{user_ip}":
-                        mangle_res.remove(id=rule['id'])
-                # اضافه کردن منگل جدید با انتخاب کاربر
-                mangle_res.add(
+                remove_user_mangle(api, user_ip)
+                api.get_resource('/ip/firewall/mangle').add(
                     chain='prerouting',
                     src_address=user_ip,
                     action='mark-routing',
@@ -175,6 +167,7 @@ def user():
 
     return render_template('user.html', user_ip=user_ip, user_lease=user_lease, tables=tables)
 
+
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
     if 'role' not in session or session['role'] != 'admin':
@@ -184,25 +177,20 @@ def admin():
         return render_template('error.html', message="ارتباط با میکروتیک برقرار نشد")
 
     leases = get_dhcp_leases(api)
-    tables = list(ROUTING_TABLES.values())
+    tables = ROUTING_TABLES
     default_route = get_default_route(api)
 
     if request.method == 'POST':
+        client_ip = request.form.get('client_ip')
+
         if 'change_internet' in request.form:
-            client_ip = request.form.get('client_ip')
             new_internet = request.form.get('new_internet')
-            if new_internet not in tables:
+            if new_internet not in tables.values():
                 flash("تیبل انتخابی نامعتبر است", "danger")
             else:
                 try:
-                    # حذف منگل قبلی برای IP
-                    mangle_res = api.get_resource('/ip/firewall/mangle')
-                    rules = mangle_res.get()
-                    for rule in rules:
-                        if rule.get('comment') == f"user:{client_ip}":
-                            mangle_res.remove(id=rule['id'])
-                    # اضافه کردن منگل جدید
-                    mangle_res.add(
+                    remove_user_mangle(api, client_ip)
+                    api.get_resource('/ip/firewall/mangle').add(
                         chain='prerouting',
                         src_address=client_ip,
                         action='mark-routing',
@@ -215,24 +203,18 @@ def admin():
                     flash(f"خطا در تغییر اینترنت: {e}", "danger")
 
         elif 'remove_internet' in request.form:
-            client_ip = request.form.get('client_ip')
             try:
-                mangle_res = api.get_resource('/ip/firewall/mangle')
-                rules = mangle_res.get()
-                for rule in rules:
-                    if rule.get('comment') == f"user:{client_ip}":
-                        mangle_res.remove(id=rule['id'])
+                remove_user_mangle(api, client_ip)
                 flash(f"اینترنت کاربر {client_ip} حذف شد و به پیش‌فرض برگشت", "success")
             except Exception as e:
                 flash(f"خطا در حذف اینترنت: {e}", "danger")
 
         elif 'change_default' in request.form:
             default_table = request.form.get('default_table')
-            if default_table not in tables:
+            if default_table not in tables.values():
                 flash("تیبل پیش‌فرض نامعتبر است", "danger")
             else:
                 try:
-                    # پیدا کردن default route و تغییر routing table آن
                     route_res = api.get_resource('/ip/route')
                     routes = route_res.get()
                     updated = False
@@ -251,13 +233,16 @@ def admin():
 
     return render_template('admin.html', leases=leases, tables=tables, default_route=default_route)
 
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('error.html', message="صفحه مورد نظر یافت نشد"), 404
 
+
 @app.errorhandler(500)
 def internal_error(e):
     return render_template('error.html', message="خطای داخلی سرور"), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
