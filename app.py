@@ -70,6 +70,20 @@ def remove_user_mangle(api, user_ip):
 # ---------- 📌 6. افزودن منگل برای کاربر ----------
 def add_user_mangle(api, user_ip, routing_mark):
     mangle = api.get_resource('/ip/firewall/mangle')
+    
+    # حذف قوانین قبلی فقط برای اطمینان
+    remove_user_mangle(api, user_ip)
+
+    # ✅ اضافه کردن استثنا برای دسترسی به سایت و خود میکروتیک
+    mangle.add(
+        chain="prerouting",
+        src_address=user_ip,
+        dst_address=API_HOST,
+        action="accept",
+        comment=f"EXCEPTION: {user_ip}"
+    )
+
+    # 🔁 قانون اصلی با مارک روت
     mangle.add(
         chain='prerouting',
         src_address=user_ip,
