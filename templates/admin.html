@@ -72,10 +72,11 @@
                     <div class="col-md-4">
                         <select name="interface_for_{{ table.id }}" class="form-select">
                             {% for iface_id, iface_name in interfaces.items() %}
-                                <option value="{{ iface_id }}" {% if iface_id == default_route %}selected{% endif %}>
+                                <option value="{{ iface_id }}" 
+                                    {% if table_interface_map.get(table.id) == iface_id %}selected{% endif %}>
                                   {{ iface_name }}
-                                  {% if table_interface_map.get(iface_id) %}
-                                    ({{ interfaces.get(table_interface_map.get(iface_id)) }})
+                                  {% if table_interface_map.get(table.id) %}
+                                    ({{ interfaces.get(table_interface_map.get(table.id)) }})
                                   {% endif %}
                                 </option>
                             {% endfor %}
@@ -87,5 +88,6 @@
         <button type="submit" name="update_table_interfaces" class="btn btn-success mt-3">ذخیره ارتباط‌ها</button>
     </form>
 
+    
 </body>
 </html>
