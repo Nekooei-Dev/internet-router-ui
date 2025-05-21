@@ -197,5 +197,117 @@ def settings():
         settings=settings_data
     )
 
+@app.route('/user', methods=['GET', 'POST'])
+def user():
+    if 'role' not in session or session['role'] != 'user':
+        return redirect(url_for('login'))
+
+    api = connect_api()
+    if not api:
+        return render_template('error.html', message="ارتباط با میکروتیک برقرار نشد")
+
+    user_ip = get_client_ip()
+    if not is_allowed_network(user_ip):
+        return render_template('error.html', message="آی‌پی شما مجاز نیست")
+
+    leases = get_dhcp_leases(api)
+    user_lease = next((lease for lease in leases if lease.get('address') == user_ip), None)
+
+    settings_data = load_settings()
+    routing_tables = fetch_routing_tables(api)
+
+    # جدول‌ها با نام دوستانه
+    friendly_tables = [
+        {
+            "id": tbl["name"],
+            "name": settings_data.get("routing_tables", {}).get(tbl["name"], tbl["name"])
+        } for tbl in routing_tables
+    ]
+
+    if request.method == 'POST':
+        selected_table = request.form.get('internet_table')
+        valid_ids = [tbl["id"] for tbl in routing_tables]
+
+        if selected_table not in valid_ids:
+            flash("تیبل انتخابی نامعتبر است", "danger")
+        else:
+            try:
+                remove_user_mangle(api, user_ip)
+                add_user_mangle(api, user_ip, selected_table)
+                flash("اینترنت شما با موفقیت تغییر کرد", "success")
+            except Exception as e:
+                flash(f"خطا در تغییر اینترنت: {e}", "danger")
+
+    return render_template('user.html', user_ip=user_ip, user_lease=user_lease, tables=friendly_tables)
+
+
+@app.route('/admin', methods=['GET', 'POST'])
+def admin():
+    if 'role' not in session or session['role'] != 'admin':
+        return redirect(url_for('login'))
+
+    api = connect_api()
+    if not api:
+        return render_template('error.html', message="ارتباط با میکروتیک برقرار نشد")
+
+    settings_data = load_settings()
+    leases = get_dhcp_leases(api)
+    routing_tables = fetch_routing_tables(api)
+    default_route = get_default_route(api)
+
+    friendly_tables = [
+        {
+            "id": tbl["name"],
+            "name": settings_data.get("routing_tables", {}).get(tbl["name"], tbl["name"])
+        } for tbl in routing_tables
+    ]
+
+    if request.method == 'POST':
+        client_ip = request.form.get('client_ip')
+
+        if 'change_internet' in request.form:
+            new_internet = request.form.get('new_internet')
+            if new_internet not in [t["id"] for t in routing_tables]:
+                flash("تیبل انتخابی نامعتبر است", "danger")
+            else:
+                try:
+                    remove_user_mangle(api, client_ip)
+                    add_user_mangle(api, client_ip, new_internet)
+                    flash(f"اینترنت کاربر {client_ip} تغییر کرد", "success")
+                except Exception as e:
+                    flash(f"خطا در تغییر اینترنت: {e}", "danger")
+
+        elif 'remove_internet' in request.form:
+            try:
+                remove_user_mangle(api, client_ip)
+                flash(f"اینترنت کاربر {client_ip} حذف شد و به پیش‌فرض برگشت", "success")
+            except Exception as e:
+                flash(f"خطا در حذف اینترنت: {e}", "danger")
+
+        elif 'change_default' in request.form:
+            default_table = request.form.get('default_table')
+            if default_table not in [t["id"] for t in routing_tables]:
+                flash("تیبل پیش‌فرض نامعتبر است", "danger")
+            else:
+                try:
+                    route_res = api.get_resource('/ip/route')
+                    routes = route_res.get()
+                    updated = False
+                    for r in routes:
+                        if r.get('dst-address') == '0.0.0.0/0':
+                            route_res.set(id=r['id'], routing_table=default_table)
+                            updated = True
+                    if updated:
+                        flash("اینترنت پیش‌فرض با موفقیت تغییر کرد", "success")
+                    else:
+                        flash("روت پیش‌فرض پیدا نشد", "danger")
+                except Exception as e:
+                    flash(f"خطا در تغییر اینترنت پیش‌فرض: {e}", "danger")
+
+        return redirect(url_for('admin'))
+
+    return render_template('admin.html', leases=leases, tables=friendly_tables, default_route=default_route)
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
