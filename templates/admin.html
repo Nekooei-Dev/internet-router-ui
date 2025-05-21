@@ -21,12 +21,18 @@
         <h5>🔁 تغییر اینترنت کاربر</h5>
         <div class="row mb-2">
             <div class="col-md-4">
-                <input type="text" name="client_ip" class="form-control" placeholder="IP کاربر" required>
+                <select class="form-select" name="client_ip">
+                  {% for lease in leases %}
+                    <option value="{{ lease.address }}">{{ lease.address }} - {{ lease.host_name or lease.mac_address }}</option>
+                  {% endfor %}
+                </select>
             </div>
             <div class="col-md-4">
                 <select name="new_internet" class="form-select">
-                    {% for t in tables %}
-                        <option value="{{ t.id }}">{{ t.name }}</option>
+                    {% for table in tables %}
+                      {% if table.id != "main" %}
+                        <option value="{{ table.id }}">{{ table.name }}</option>
+                      {% endif %}
                     {% endfor %}
                 </select>
             </div>
