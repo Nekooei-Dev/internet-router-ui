@@ -1,45 +1,83 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <title>تنظیمات اولیه</title>
+    <!-- Bootstrap & FontAwesome -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-<body class="container mt-5">
+<body class="bg-light">
 
-    <h2 class="mb-4">تنظیمات نام‌گذاری</h2>
+<div class="container mt-5">
 
+    <div class="text-center mb-4">
+        <h3 class="fw-bold"><i class="fas fa-sliders-h me-2 text-primary"></i>تنظیمات نام‌گذاری</h3>
+    </div>
+
+    <!-- پیام‌ها -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
+        <div class="mb-3">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+            </div>
+          {% endfor %}
+        </div>
       {% endif %}
     {% endwith %}
 
     <form method="POST">
-        <h5>📶 نام‌گذاری اینترفیس‌ها</h5>
-        {% for iface in interfaces %}
-            <div class="mb-2">
-                <label class="form-label">{{ iface.name }}</label>
-                <input type="text" class="form-control" name="iface_{{ iface.name }}"
-                       value="{{ settings.interfaces.get(iface.name, '') }}">
+
+        <!-- اینترفیس‌ها -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-network-wired me-1"></i>📶 نام‌گذاری اینترفیس‌ها
             </div>
-        {% endfor %}
-
-        <hr>
-
-        <h5>🔁 نام‌گذاری جدول‌های روت</h5>
-        {% for table in routing_tables %}
-            <div class="mb-2">
-                <label class="form-label">{{ table.name }}</label>
-                <input type="text" class="form-control" name="table_{{ table.name }}"
-                       value="{{ settings.routing_tables.get(table.name, '') }}">
+            <div class="card-body">
+                {% for iface in interfaces %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ iface.name }}</label>
+                        <input type="text" class="form-control" name="iface_{{ iface.name }}"
+                               value="{{ settings.interfaces.get(iface.name, '') }}">
+                    </div>
+                {% endfor %}
             </div>
-        {% endfor %}
+        </div>
 
-        <button type="submit" class="btn btn-primary mt-3">ذخیره تنظیمات</button>
+        <!-- جدول‌های روت -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <i class="fas fa-route me-1"></i>🔁 نام‌گذاری جدول‌های روت
+            </div>
+            <div class="card-body">
+                {% for table in routing_tables %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ table.name }}</label>
+                        <input type="text" class="form-control" name="table_{{ table.name }}"
+                               value="{{ settings.routing_tables.get(table.name, '') }}">
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- دکمه ذخیره -->
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>بازگشت
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i>ذخیره تنظیمات
+            </button>
+        </div>
+
     </form>
 
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
