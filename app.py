@@ -407,7 +407,7 @@ def admin():
     }
 
     table_interface_map = settings_data.get("table_interface_map", {})
-
+    interface_gateways = get_interface_gateways(api)
     return render_template(
         'admin.html',
         leases=leases,
