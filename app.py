@@ -1,7 +1,8 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash
-from routeros_api import RouterOsApiPool
-from routeros_api.exceptions import RouterOsApiCommunicationError, RouterOsApiConnectionError
+import json
+from flask import Flask, request, session
+from routeros_api import RouterOsApiPool, exceptions
+import ipaddress
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "9f7e2c45b6a14d9a8e4d31f0c5b2a7e1")
@@ -11,6 +12,8 @@ API_USER = os.environ.get("API_USER", "API")
 API_PASS = os.environ.get("API_PASS", "API")
 API_PORT = int(os.environ.get("API_PORT", 8728))
 
+SETTINGS_FILE = "settings.json"
+
 WEB_USER_PASSWORD = os.environ.get("WEB_USER_PASSWORD", "123456")
 WEB_ADMIN_PASSWORD = os.environ.get("WEB_ADMIN_PASSWORD", "123456789")
 
@@ -19,78 +22,117 @@ ALLOWED_NETWORKS = [net.strip() for net in os.environ.get(
     "172.30.30.0/24 , 172.32.30.10-172.32.30.40 , 192.168.1.10"
 ).split(",")]
 
-ROUTING_TABLES = {
-    "پیش فرض": "main",
-    "همراه اول": "To-HamrahAval",
-    "ایرانسل": "To-IranCell",
-    "انتن وایرلس": "To-Anten",
-    "تلفن فروشگاه": "To-ADSL",
-}
-
-interfaces = {
-    "ایرانسل": "Ether1 - Irancell SIM Internet",
-    "همراه اول": "Ether2 - MCI SIM Internet",
-    "تلفن فروشگاه": "Ether3 - TCI ADSL Internet",
-    "انتن وایرلس": "Ether4 - Asiatech Wireless Internet",
-}
 
 
+
+### 📌 0. ذخیره و بارگذاری تنظیمات اولیه
+def load_settings():
+    if os.path.exists(SETTINGS_FILE):
+        with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {
+        "routing_tables": {},
+        "interfaces": {},
+        "routes": {}
+    }
+
+def save_settings(settings):
+    with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(settings, f, ensure_ascii=False, indent=2)
+
+
+### 📌 1. گرفتن IP کاربری که لاگین کرده
+def get_user_ip():
+    return request.headers.get('X-Real-IP') or request.remote_addr
+
+
+### 📌 2. اتصال به میکروتیک
 def connect_api():
     try:
-        api = RouterOsApiPool(API_HOST, username=API_USER, password=API_PASS, port=API_PORT, plaintext_login=True)
-        return api.get_api()
-    except (RouterOsApiCommunicationError, RouterOsApiConnectionError) as e:
-        print(f"API Connection Error: {e}")
+        api_pool = RouterOsApiPool(API_HOST, username=API_USER, password=API_PASS, port=API_PORT, plaintext_login=True)
+        return api_pool.get_api()
+    except exceptions.RouterOsApiConnectionError as e:
+        print(f"❌ اتصال به میکروتیک ناموفق: {e}")
         return None
 
-
-def get_dhcp_leases(api):
-    try:
-        return api.get_resource('/ip/dhcp-server/lease').get()
-    except Exception as e:
-        print(f"Error fetching DHCP leases: {e}")
-        return []
+### 📌 3. دریافت لیست Routing Tableها
+def fetch_routing_tables(api):
+    return api.get_resource('/routing/table').get()
 
 
-def get_routes(api):
-    try:
-        return api.get_resource('/ip/route').get()
-    except Exception as e:
-        print(f"Error fetching routes: {e}")
-        return []
+### 📌 4. دریافت لیست اینترفیس‌ها
+def fetch_interfaces(api):
+    return api.get_resource('/interface/ethernet').get()
 
-
-def get_default_route(api):
-    routes = get_routes(api)
-    for r in routes:
-        if r.get('dst-address') == '0.0.0.0/0':
-            return r
-    return None
-
-
-def remove_user_mangle(api, ip):
-    mangle_res = api.get_resource('/ip/firewall/mangle')
-    rules = mangle_res.get()
+### 📌 5. حذف قوانین منگل یک کاربر
+def remove_user_mangle(api, user_ip):
+    mangle = api.get_resource('/ip/firewall/mangle')
+    rules = mangle.get()
     for rule in rules:
-        if rule.get('comment') == f"user:{ip}":
-            mangle_res.remove(id=rule['id'])
+        if rule.get('comment') == f"user:{user_ip}":
+            mangle.remove(id=rule['id'])
 
+
+### 📌 6. افزودن منگل برای کاربر
+def add_user_mangle(api, user_ip, routing_mark):
+    mangle = api.get_resource('/ip/firewall/mangle')
+    mangle.add(
+        chain='prerouting',
+        src_address=user_ip,
+        action='mark-routing',
+        new_routing_mark=routing_mark,
+        passthrough='yes',
+        comment=f"user:{user_ip}"
+    )
+
+### 📌 7. افزودن default route برای جدول خاص
+def set_default_route(api, routing_table, gateway):
+    routes = api.get_resource('/ip/route')
+    routes.add(
+        dst_address="0.0.0.0/0",
+        gateway=gateway,
+        routing_table=routing_table,
+        check_gateway="ping"
+    )
+
+### 📌 8. تنظیم جدول برای اینترفیس‌ها (route per interface)
+def create_table_routes(api, table_name, interface_name):
+    ip_routes = api.get_resource('/ip/route')
+    ip_routes.add(
+        dst_address="0.0.0.0/0",
+        gateway=interface_name,
+        routing_table=table_name,
+        check_gateway="ping"
+    )
+
+### 📌 9. بررسی دسترسی صفحات بر اساس نقش
+def require_role(role):
+    def wrapper(f):
+        def decorated(*args, **kwargs):
+            if 'role' not in session or session['role'] != role:
+                return "Access denied", 403
+            return f(*args, **kwargs)
+        return decorated
+    return wrapper
+
+### 📌 10. بررسی IP مجاز بودن کاربر (بر اساس ALLOWED_NETWORKS)
+ALLOWED_NETWORKS = [ip.strip() for ip in os.environ.get(
+    "ALLOWED_NETWORKS", "172.30.30.0/24 , 192.168.1.0/24").split(",")]
 
 def is_allowed_network(ip):
-    import ipaddress
-    ip_addr = ipaddress.ip_address(ip)
-    for net in ALLOWED_NETWORKS:
-        try:
+    try:
+        ip_addr = ipaddress.ip_address(ip)
+        for net in ALLOWED_NETWORKS:
             if "-" in net:
                 start_ip, end_ip = net.split("-")
                 if ipaddress.ip_address(start_ip) <= ip_addr <= ipaddress.ip_address(end_ip):
                     return True
             else:
-                net_obj = ipaddress.ip_network(net, strict=False)
+                net_obj = ipaddress.ip_network(net.strip(), strict=False)
                 if ip_addr in net_obj:
                     return True
-        except Exception:
-            continue
+    except Exception:
+        return False
     return False
 
 
@@ -109,140 +151,51 @@ def login():
     return render_template('login.html')
 
 
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('login'))
+from flask import render_template, redirect, url_for, flash
 
 
-@app.route('/')
-def index():
-    if 'role' not in session:
-        return redirect(url_for('login'))
-    role = session['role']
-    return render_template('index.html', role=role)
 
-
-@app.route('/about')
-def about():
-    if 'role' not in session:
-        return redirect(url_for('login'))
-    return render_template('about.html')
-
-
-@app.route('/user', methods=['GET', 'POST'])
-def user():
-    if 'role' not in session or session['role'] != 'user':
-        return redirect(url_for('login'))
+@app.route("/settings", methods=["GET", "POST"])
+@require_role("admin")
+def settings():
     api = connect_api()
     if not api:
-        return render_template('error.html', message="ارتباط با میکروتیک برقرار نشد")
+        return render_template("error.html", message="عدم اتصال به API میکروتیک")
 
-    user_ip = request.remote_addr
-    if not is_allowed_network(user_ip):
-        return render_template('error.html', message="آی‌پی شما مجاز نیست")
+    settings_data = load_settings()
+    interfaces = fetch_interfaces(api)
+    routing_tables = fetch_routing_tables(api)
 
-    leases = get_dhcp_leases(api)
-    user_lease = next((lease for lease in leases if lease.get('address') == user_ip), None)
-    tables = ROUTING_TABLES
+    if request.method == "POST":
+        # ذخیره‌سازی نام‌های دوستانه اینترفیس‌ها
+        new_interface_names = {}
+        for iface in interfaces:
+            iface_id = iface.get("name")
+            friendly_name = request.form.get(f"iface_{iface_id}", "").strip()
+            if friendly_name:
+                new_interface_names[iface_id] = friendly_name
 
-    if request.method == 'POST':
-        selected_table = request.form.get('internet_table')
-        if selected_table not in tables.values():
-            flash("تیبل انتخابی نامعتبر است", "danger")
-        else:
-            try:
-                remove_user_mangle(api, user_ip)
-                api.get_resource('/ip/firewall/mangle').add(
-                    chain='prerouting',
-                    src_address=user_ip,
-                    action='mark-routing',
-                    new_routing_mark=selected_table,
-                    comment=f"user:{user_ip}",
-                    passthrough='yes'
-                )
-                flash("اینترنت شما با موفقیت تغییر کرد", "success")
-            except Exception as e:
-                flash(f"خطا در تغییر اینترنت: {e}", "danger")
+        # ذخیره‌سازی نام‌های دوستانه روت‌تیبل‌ها
+        new_routing_names = {}
+        for table in routing_tables:
+            table_id = table.get("name")
+            friendly_name = request.form.get(f"table_{table_id}", "").strip()
+            if friendly_name:
+                new_routing_names[table_id] = friendly_name
 
-    return render_template('user.html', user_ip=user_ip, user_lease=user_lease, tables=tables)
+        settings_data["interfaces"] = new_interface_names
+        settings_data["routing_tables"] = new_routing_names
+        save_settings(settings_data)
 
+        flash("تنظیمات با موفقیت ذخیره شد", "success")
+        return redirect(url_for("settings"))
 
-@app.route('/admin', methods=['GET', 'POST'])
-def admin():
-    if 'role' not in session or session['role'] != 'admin':
-        return redirect(url_for('login'))
-    api = connect_api()
-    if not api:
-        return render_template('error.html', message="ارتباط با میکروتیک برقرار نشد")
-
-    leases = get_dhcp_leases(api)
-    tables = ROUTING_TABLES
-    default_route = get_default_route(api)
-
-    if request.method == 'POST':
-        client_ip = request.form.get('client_ip')
-
-        if 'change_internet' in request.form:
-            new_internet = request.form.get('new_internet')
-            if new_internet not in tables.values():
-                flash("تیبل انتخابی نامعتبر است", "danger")
-            else:
-                try:
-                    remove_user_mangle(api, client_ip)
-                    api.get_resource('/ip/firewall/mangle').add(
-                        chain='prerouting',
-                        src_address=client_ip,
-                        action='mark-routing',
-                        new_routing_mark=new_internet,
-                        comment=f"user:{client_ip}",
-                        passthrough='yes'
-                    )
-                    flash(f"اینترنت کاربر {client_ip} تغییر کرد", "success")
-                except Exception as e:
-                    flash(f"خطا در تغییر اینترنت: {e}", "danger")
-
-        elif 'remove_internet' in request.form:
-            try:
-                remove_user_mangle(api, client_ip)
-                flash(f"اینترنت کاربر {client_ip} حذف شد و به پیش‌فرض برگشت", "success")
-            except Exception as e:
-                flash(f"خطا در حذف اینترنت: {e}", "danger")
-
-        elif 'change_default' in request.form:
-            default_table = request.form.get('default_table')
-            if default_table not in tables.values():
-                flash("تیبل پیش‌فرض نامعتبر است", "danger")
-            else:
-                try:
-                    route_res = api.get_resource('/ip/route')
-                    routes = route_res.get()
-                    updated = False
-                    for r in routes:
-                        if r.get('dst-address') == '0.0.0.0/0':
-                            route_res.set(id=r['id'], routing_table=default_table)
-                            updated = True
-                    if updated:
-                        flash("اینترنت پیش‌فرض با موفقیت تغییر کرد", "success")
-                    else:
-                        flash("روت پیش‌فرض پیدا نشد", "danger")
-                except Exception as e:
-                    flash(f"خطا در تغییر اینترنت پیش‌فرض: {e}", "danger")
-
-        return redirect(url_for('admin'))
-
-    return render_template('admin.html', leases=leases, tables=tables, default_route=default_route)
-
-
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('error.html', message="صفحه مورد نظر یافت نشد"), 404
-
-
-@app.errorhandler(500)
-def internal_error(e):
-    return render_template('error.html', message="خطای داخلی سرور"), 500
-
+    return render_template(
+        "settings.html",
+        interfaces=interfaces,
+        routing_tables=routing_tables,
+        settings=settings_data
+    )
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
