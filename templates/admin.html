@@ -48,9 +48,9 @@
         <div class="row">
             <div class="col-md-4">
                 <select name="default_table" class="form-select">
-                    {% for t in tables %}
-                        <option value="{{ t.id }}" {% if t.id == default_route %}selected{% endif %}>
-                            {{ t.name }}
+                    {% for table in tables %}
+                        <option value="{{ table.id }}" {% if table.id == default_route %}selected{% endif %}>
+                            {{ table.name }}
                         </option>
                     {% endfor %}
                 </select>
