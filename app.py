@@ -1,6 +1,6 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-from routeros_api import RouterOsApiPool, ApiException
+from routeros_api import RouterOsApiPool, exceptions
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "9f7e2c45b6a14d9a8e4d31f0c5b2a7e1")
@@ -30,7 +30,7 @@ def connect_api():
     try:
         api = RouterOsApiPool(API_HOST, username=API_USER, password=API_PASS, port=API_PORT, plaintext_login=True)
         return api.get_api()
-    except ApiException as e:
+    except exceptions as e:
         print(f"API Connection Error: {e}")
         return None
 
