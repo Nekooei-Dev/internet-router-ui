@@ -332,7 +332,7 @@ def admin():
                     updated = False
 
                     for r in routes:
-                        if r.get('dst-address') == '0.0.0.0/0':
+                        if r.get('dst-address') == '0.0.0.0/0' and r.get('routing-table', 'main') == 'main':
                             route_res.set(id=r['id'], routing_table=default_table)
                             updated = True
 
