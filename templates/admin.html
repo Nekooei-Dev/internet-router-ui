@@ -58,21 +58,23 @@
     <form method="POST">
         <h5>📶 تنظیم ارتباط جدول‌ها با اینترفیس‌ها</h5>
         {% for table in tables %}
-            <div class="row mb-2">
-                <div class="col-md-4">
-                    <label class="form-label">{{ table.name }}</label>
+            {% if table.id != "main" %}
+                <div class="row mb-2">
+                    <div class="col-md-4">
+                        <label class="form-label">{{ table.name }}</label>
+                    </div>
+                    <div class="col-md-4">
+                        <select name="interface_for_{{ table.id }}" class="form-select">
+                            {% for iface_id, iface_name in interfaces.items() %}
+                                <option value="{{ iface_id }}"
+                                    {% if table_interface_map.get(table.id) == iface_id %}selected{% endif %}>
+                                    {{ iface_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <select name="interface_for_{{ table.id }}" class="form-select">
-                        {% for iface_id, iface_name in interfaces.items() %}
-                            <option value="{{ iface_id }}"
-                                {% if table_interface_map.get(table.id) == iface_id %}selected{% endif %}>
-                                {{ iface_name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
+            {% endif %}
         {% endfor %}
         <button type="submit" name="update_table_interfaces" class="btn btn-success mt-3">ذخیره ارتباط‌ها</button>
     </form>
