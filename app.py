@@ -324,34 +324,45 @@ def admin():
                 flash(f"خطا در حذف اینترنت: {e}", "danger")
 
         elif 'change_default' in request.form:
-            default_table = request.form.get('default_table')
-            if default_table not in valid_tables:
-                flash("تیبل پیش‌فرض نامعتبر است", "danger")
+            selected_iface = request.form.get('default_table')
+        
+            # چک کن که واقعا اینترفیس معتبری انتخاب شده
+            interface_names = [i["name"] for i in fetch_interfaces(api)]
+            if selected_iface not in interface_names:
+                flash("اینترفیس انتخاب‌شده معتبر نیست", "danger")
             else:
                 try:
-                    route_res = api.get_resource('/ip/route')
-                    routes = route_res.get()
+                    # گرفتن IP مربوط به اینترفیس از /ip/address
+                    address_list = api.get_resource('/ip/address').get()
+                    gateway_ip = None
+                    for addr in address_list:
+                        if addr.get('interface') == selected_iface:
+                            ip_cidr = addr.get('address')
+                            if ip_cidr:
+                                gateway_ip = ip_cidr.split('/')[0]  # فقط IP، بدون CIDR
         
-                    # حذف روت‌های قبلی پیش‌فرض main
-                    for r in routes:
-                        if r.get('dst-address') == '0.0.0.0/0' and r.get('routing-table', 'main') == 'main':
-                            route_res.remove(id=r['id'])
+                    if not gateway_ip:
+                        flash(f"هیچ IP روی اینترفیس {selected_iface} یافت نشد", "danger")
+                    else:
+                        # حذف روت پیش‌فرض قبلی
+                        route_res = api.get_resource('/ip/route')
+                        routes = route_res.get()
+                        for r in routes:
+                            if r.get('dst-address') == '0.0.0.0/0' and r.get('routing-table', 'main') == 'main':
+                                route_res.remove(id=r['id'])
         
-                    # گرفتن interface مربوط به تیبل انتخاب‌شده
-                    iface = table_interface_map.get(default_table)
-                    if iface:
-                        # اضافه کردن روت جدید برای main
+                        # اضافه کردن روت جدید با گیت‌وی IP
                         route_res.add(
                             dst_address="0.0.0.0/0",
-                            gateway=iface,
+                            gateway=gateway_ip,
                             routing_table="main",
-                            comment="default-route"
+                            comment=f"default-via:{selected_iface}"
                         )
-                        flash("اینترنت پیش‌فرض با موفقیت تنظیم شد", "success")
-                    else:
-                        flash("اینترفیس مشخص برای تیبل انتخاب‌شده یافت نشد", "danger")
+        
+                        flash("روت پیش‌فرض با موفقیت تغییر کرد", "success")
+        
                 except Exception as e:
-                    flash(f"خطا در تغییر اینترنت پیش‌فرض: {e}", "danger")
+                    flash(f"خطا در تنظیم روت پیش‌فرض: {e}", "danger")
             
 
         elif 'update_table_interfaces' in request.form:
