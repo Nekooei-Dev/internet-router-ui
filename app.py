@@ -64,7 +64,8 @@ def remove_user_mangle(api, user_ip):
     mangle = api.get_resource('/ip/firewall/mangle')
     rules = mangle.get()
     for rule in rules:
-        if rule.get('comment') == f"user:{user_ip}":
+        comment = rule.get('comment', '')
+        if comment in [f"user:{user_ip}", f"EXCEPTION: {user_ip}"]:
             mangle.remove(id=rule['id'])
 
 # ---------- 📌 6. افزودن منگل برای کاربر ----------
