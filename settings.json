@@ -1,0 +1,14 @@
+{
+  "routing_tables": {
+    "To-IranCell": "ایرانسل",
+    "To-HamrahAval": "همراه اول"
+  },
+  "interfaces": {
+    "ether1": "ایرانسل",
+    "ether2": "همراه اول"
+  },
+  "table_interface_map": {
+    "To-IranCell": "ether1",
+    "To-HamrahAval": "ether2"
+  }
+}
