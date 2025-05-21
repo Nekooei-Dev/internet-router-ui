@@ -1,92 +1,133 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>پنل ادمین</title>
+    <title>پنل مدیریت اینترنت</title>
+    <!-- Bootstrap RTL -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 </head>
 <body class="container mt-5">
 
-    <h2 class="mb-4">پنل مدیریت اینترنت</h2>
+    <h2 class="mb-4 text-center"><i class="fas fa-network-wired me-2"></i>پنل مدیریت اینترنت</h2>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
-          <div class="alert alert-{{ category }}">{{ message }}</div>
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+          </div>
         {% endfor %}
       {% endif %}
     {% endwith %}
 
-    <form method="POST" class="mb-4">
-        <h5>🔁 تغییر اینترنت کاربر</h5>
-        <div class="row mb-2">
-            <div class="col-md-4">
-                <select class="form-select" name="client_ip">
-                  {% for lease in leases %}
-                    <option value="{{ lease.address }}">{{ lease.address }} - {{ lease.host_name or lease.mac_address }}</option>
-                  {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4">
-                <select name="new_internet" class="form-select">
-                    {% for table in tables %}
-                      {% if table.id != "main" %}
-                        <option value="{{ table.id }}">{{ table.name }}</option>
-                      {% endif %}
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4 d-flex gap-2">
-                <button type="submit" name="change_internet" class="btn btn-primary">تغییر اینترنت</button>
-                <button type="submit" name="remove_internet" class="btn btn-danger">بازگشت به پیش‌فرض</button>
-            </div>
-        </div>
-    </form>
-
-    <form method="POST" class="mb-4">
-      <h5>🌐 تغییر اینترنت پیش‌فرض</h5>
-      <div class="form-group">
-        <label for="default_table">انتخاب اینترفیس برای روت پیش‌فرض:</label>
-            <select name="default_table" id="default_table" class="form-control">
-                {% for iface_id, iface_name in interfaces.items() %}
-                    <option value="{{ iface_id }}">
-                      {{ iface_id }} ({{ iface_name }})
-                      {% if iface_id in interface_gateways %} → گیت‌وی: {{ interface_gateways[iface_id] }}{% endif %}
-                    </option>
-                {% endfor %}
-            </select>
+    <!-- تغییر اینترنت کاربر -->
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <i class="fas fa-exchange-alt me-2"></i>تغییر اینترنت کاربر
       </div>
-      <button type="submit" name="change_default" class="btn btn-warning mt-2">
-        ثبت روت پیش‌فرض
-      </button>
-    </form>
-    <form method="POST">
-        <h5>📶 تنظیم ارتباط جدول‌ها با اینترفیس‌ها</h5>
-        {% for table in tables %}
-            {% if table.id != "main" %}
-                <div class="row mb-2">
-                    <div class="col-md-4">
-                        <label class="form-label">{{ table.name }}</label>
-                    </div>
-                    <div class="col-md-4">
-                        <select name="interface_for_{{ table.id }}" class="form-select">
-                            {% for iface_id, iface_name in interfaces.items() %}
-                                <option value="{{ iface_id }}" 
-                                    {% if table_interface_map.get(table.id) == iface_id %}selected{% endif %}>
-                                  {{ iface_name }}
-                                  {% if table_interface_map.get(table.id) %}
-                                    ({{ interfaces.get(table_interface_map.get(table.id)) }})
-                                  {% endif %}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-            {% endif %}
-        {% endfor %}
-        <button type="submit" name="update_table_interfaces" class="btn btn-success mt-3">ذخیره ارتباط‌ها</button>
-    </form>
+      <div class="card-body">
+        <form method="POST">
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label"><i class="fas fa-user me-1"></i>IP کاربر</label>
+              <select class="form-select" name="client_ip">
+                {% for lease in leases %}
+                  <option value="{{ lease.address }}">{{ lease.address }} - {{ lease.host_name or lease.mac_address }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"><i class="fas fa-route me-1"></i>اینترنت جدید</label>
+              <select name="new_internet" class="form-select">
+                {% for table in tables %}
+                  {% if table.id != "main" %}
+                    <option value="{{ table.id }}">{{ table.name }}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-2">
+              <button type="submit" name="change_internet" class="btn btn-success">
+                <i class="fas fa-check-circle me-1"></i>تغییر اینترنت
+              </button>
+              <button type="submit" name="remove_internet" class="btn btn-danger">
+                <i class="fas fa-undo me-1"></i>بازگشت به پیش‌فرض
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
 
-    
+    <!-- تغییر اینترنت پیش‌فرض -->
+    <div class="card mb-4">
+      <div class="card-header bg-warning text-dark">
+        <i class="fas fa-globe me-2"></i>تغییر اینترنت پیش‌فرض
+      </div>
+      <div class="card-body">
+        <form method="POST">
+          <div class="mb-3">
+            <label for="default_table" class="form-label"><i class="fas fa-network-wired me-1"></i>انتخاب اینترفیس برای روت پیش‌فرض:</label>
+            <select name="default_table" id="default_table" class="form-select">
+              {% for iface_id, iface_name in interfaces.items() %}
+                <option value="{{ iface_id }}">
+                  {{ iface_id }} ({{ iface_name }})
+                  {% if iface_id in interface_gateways %} → گیت‌وی: {{ interface_gateways[iface_id] }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" name="change_default" class="btn btn-warning">
+            <i class="fas fa-save me-1"></i>ثبت روت پیش‌فرض
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- تنظیم ارتباط جدول‌ها با اینترفیس‌ها -->
+    <div class="card mb-4">
+      <div class="card-header bg-info text-white">
+        <i class="fas fa-link me-2"></i>تنظیم ارتباط جدول‌ها با اینترفیس‌ها
+      </div>
+      <div class="card-body">
+        <form method="POST">
+          {% for table in tables %}
+            {% if table.id != "main" %}
+              <div class="row mb-3 align-items-center">
+                <div class="col-md-4">
+                  <label class="form-label"><i class="fas fa-table me-1"></i>{{ table.name }}</label>
+                </div>
+                <div class="col-md-4">
+                  <select name="interface_for_{{ table.id }}" class="form-select">
+                    {% for iface_id, iface_name in interfaces.items() %}
+                      <option value="{{ iface_id }}" 
+                        {% if table_interface_map.get(table.id) == iface_id %}selected{% endif %}>
+                        {{ iface_name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+          <button type="submit" name="update_table_interfaces" class="btn btn-success mt-3">
+            <i class="fas fa-save me-1"></i>ذخیره ارتباط‌ها
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- دکمه بازگشت -->
+    <div class="text-center mt-4">
+      <a href="/" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i>بازگشت
+      </a>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
