@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>تنظیمات اولیه</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>تنظیمات اولیه اینترنت</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <h2>نام‌گذاری اینترفیس‌ها</h2>
+        <table>
+            <tr><th>نام فنی</th><th>نام دوستانه</th></tr>
+            {% for iface in interfaces %}
+                <tr>
+                    <td>{{ iface.name }}</td>
+                    <td>
+                        <input type="text" name="iface_{{ iface.name }}" value="{{ settings.interfaces[iface.name]|default('') }}">
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        <h2>نام‌گذاری Routing Tables</h2>
+        <table>
+            <tr><th>نام فنی</th><th>نام دوستانه</th></tr>
+            {% for table in routing_tables %}
+                <tr>
+                    <td>{{ table.name }}</td>
+                    <td>
+                        <input type="text" name="table_{{ table.name }}" value="{{ settings.routing_tables[table.name]|default('') }}">
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        <button type="submit">ذخیره تنظیمات</button>
+        <a href="{{ url_for('admin') }}">بازگشت</a>
+    </form>
+</body>
+</html>
