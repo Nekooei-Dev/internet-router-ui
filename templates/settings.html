@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>تنظیمات اولیه</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
 </head>
-<body>
-    <h1>تنظیمات اولیه اینترنت</h1>
+<body class="container mt-5">
+
+    <h2 class="mb-4">تنظیمات نام‌گذاری</h2>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -17,34 +18,28 @@
     {% endwith %}
 
     <form method="POST">
-        <h2>نام‌گذاری اینترفیس‌ها</h2>
-        <table>
-            <tr><th>نام فنی</th><th>نام دوستانه</th></tr>
-            {% for iface in interfaces %}
-                <tr>
-                    <td>{{ iface.name }}</td>
-                    <td>
-                        <input type="text" name="iface_{{ iface.name }}" value="{{ settings.interfaces[iface.name]|default('') }}">
-                    </td>
-                </tr>
-            {% endfor %}
-        </table>
+        <h5>📶 نام‌گذاری اینترفیس‌ها</h5>
+        {% for iface in interfaces %}
+            <div class="mb-2">
+                <label class="form-label">{{ iface.name }}</label>
+                <input type="text" class="form-control" name="iface_{{ iface.name }}"
+                       value="{{ settings.interfaces.get(iface.name, '') }}">
+            </div>
+        {% endfor %}
 
-        <h2>نام‌گذاری Routing Tables</h2>
-        <table>
-            <tr><th>نام فنی</th><th>نام دوستانه</th></tr>
-            {% for table in routing_tables %}
-                <tr>
-                    <td>{{ table.name }}</td>
-                    <td>
-                        <input type="text" name="table_{{ table.name }}" value="{{ settings.routing_tables[table.name]|default('') }}">
-                    </td>
-                </tr>
-            {% endfor %}
-        </table>
+        <hr>
 
-        <button type="submit">ذخیره تنظیمات</button>
-        <a href="{{ url_for('admin') }}">بازگشت</a>
+        <h5>🔁 نام‌گذاری جدول‌های روت</h5>
+        {% for table in routing_tables %}
+            <div class="mb-2">
+                <label class="form-label">{{ table.name }}</label>
+                <input type="text" class="form-control" name="table_{{ table.name }}"
+                       value="{{ settings.routing_tables.get(table.name, '') }}">
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary mt-3">ذخیره تنظیمات</button>
     </form>
+
 </body>
 </html>
