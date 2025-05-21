@@ -1,7 +1,6 @@
 import os
 import json
 import ipaddress
-from functools import wraps
 from flask import Flask, request, session, render_template, redirect, url_for, flash
 from routeros_api import RouterOsApiPool, exceptions
 
@@ -118,11 +117,9 @@ def create_table_routes(api, table_name, interface_name):
 # ---------- 📌 9. دسترسی نقش ----------
 def require_role(role):
     def wrapper(f):
-        @wraps(f)
         def decorated(*args, **kwargs):
             if 'role' not in session or session['role'] != role:
-                flash("دسترسی غیرمجاز", "danger")
-                return redirect(url_for('login'))
+                return "Access denied", 403
             return f(*args, **kwargs)
         return decorated
     return wrapper
@@ -140,8 +137,8 @@ def is_allowed_network(ip):
                 net_obj = ipaddress.ip_network(net.strip(), strict=False)
                 if ip_addr in net_obj:
                     return True
-    except Exception as e:
-        print(f"خطا در بررسی IP مجاز: {e}")
+    except Exception:
+        return False
     return False
 
 # ---------- 📌 11. گرفتن DHCP لیست ----------
@@ -200,7 +197,6 @@ def get_interface_gateways(api):
             gateways[iface] = gw
 
     return gateways
-
 # ---------- 📌 صفحه اصلی ----------
 @app.route("/")
 def index():
@@ -221,21 +217,13 @@ def login():
             flash("رمز عبور اشتباه است", "danger")
     return render_template('login.html')
 
-# ---------- 📌 Logout ----------
-@app.route('/logout')
-def logout():
-    session.clear()
-    flash("شما خارج شدید", "success")
-    return redirect(url_for('login'))
-
 # ---------- 📌 صفحه تنظیمات ادمین ----------
 @app.route("/settings", methods=["GET", "POST"])
 @require_role("admin")
 def settings():
     api = connect_api()
     if not api:
-        flash("عدم اتصال به API میکروتیک", "danger")
-        return redirect(url_for('admin'))
+        return render_template("error.html", message="عدم اتصال به API میکروتیک")
 
     settings_data = load_settings()
     interfaces = fetch_interfaces(api)
@@ -251,149 +239,189 @@ def settings():
 
         new_routing_names = {}
         for table in routing_tables:
-            table_name = table.get("name")
-            friendly_name = request.form.get(f"table_{table_name}", "").strip()
+            table_id = table.get("name")
+            friendly_name = request.form.get(f"table_{table_id}", "").strip()
             if friendly_name:
-                new_routing_names[table_name] = friendly_name
+                new_routing_names[table_id] = friendly_name
 
         settings_data["interfaces"] = new_interface_names
         settings_data["routing_tables"] = new_routing_names
-
         save_settings(settings_data)
-        flash("تنظیمات ذخیره شد.", "success")
-        return redirect(url_for('settings'))
 
-    return render_template('settings.html',
-                           interfaces=interfaces,
-                           routing_tables=routing_tables,
-                           settings=settings_data)
+        flash("تنظیمات با موفقیت ذخیره شد", "success")
+        return redirect(url_for("settings"))
 
-# ---------- 📌 صفحه مدیریت ادمین ----------
-@app.route("/admin", methods=["GET", "POST"])
-@require_role("admin")
-def admin():
+    return render_template(
+        "settings.html",
+        interfaces=interfaces,
+        routing_tables=routing_tables,
+        settings=settings_data
+    )
+
+# ---------- 📌 صفحه کاربر ----------
+@app.route('/user', methods=['GET', 'POST'])
+def user():
+    if 'role' not in session or session['role'] != 'user':
+        return redirect(url_for('login'))
+
     api = connect_api()
     if not api:
-        flash("عدم اتصال به API میکروتیک", "danger")
-        return render_template('admin.html')
+        return render_template('error.html', message="ارتباط با میکروتیک برقرار نشد")
+
+    user_ip = get_user_ip()
+    if not is_allowed_network(user_ip):
+        return render_template('error.html', message="آی‌پی شما مجاز نیست")
+
+    leases = get_dhcp_leases(api)
+    user_lease = next((lease for lease in leases if lease.get('address') == user_ip), None)
+
+    settings_data = load_settings()
+    routing_tables = fetch_routing_tables(api)
+
+    friendly_tables = [
+        {
+            "id": tbl["name"],
+            "name": settings_data.get("routing_tables", {}).get(tbl["name"], tbl["name"])
+        } for tbl in routing_tables
+    ]
+
+    if request.method == 'POST':
+        selected_table = request.form.get('internet_table')
+        valid_ids = [tbl["name"] for tbl in routing_tables]  # اصلاح شده ✅
+
+        if selected_table not in valid_ids:
+            flash("تیبل انتخابی نامعتبر است", "danger")
+        else:
+            try:
+                remove_user_mangle(api, user_ip)
+                add_user_mangle(api, user_ip, selected_table)
+                flash("اینترنت شما با موفقیت تغییر کرد", "success")
+            except Exception as e:
+                flash(f"خطا در تغییر اینترنت: {e}", "danger")
+
+    return render_template('user.html', user_ip=user_ip, user_lease=user_lease, tables=friendly_tables)
+
+# ---------- 📌 صفحه ادمین ----------
+@app.route('/admin', methods=['GET', 'POST'])
+def admin():
+    if 'role' not in session or session['role'] != 'admin':
+        return redirect(url_for('login'))
+
+    api = connect_api()
+    if not api:
+        return render_template('error.html', message="ارتباط با میکروتیک برقرار نشد")
 
     settings_data = load_settings()
     table_interface_map = settings_data.get("table_interface_map", {})
+    leases = get_dhcp_leases(api)
+    routing_tables = fetch_routing_tables(api)
+    default_route = get_default_route(api)
 
-    if request.method == "POST":
-        action = request.form.get("action")
-        client_ip = request.form.get("ip_address", "").strip()
+    friendly_tables = [
+        {
+            "id": tbl["name"],
+            "name": settings_data.get("routing_tables", {}).get(tbl["name"], tbl["name"])
+        } for tbl in routing_tables
+    ]
 
-        # اعتبارسنجی IP
-        if client_ip:
+    if request.method == 'POST':
+        client_ip = request.form.get('client_ip')
+        valid_tables = [t["name"] for t in routing_tables]  # اصلاح شده ✅
+
+        if 'change_internet' in request.form:
+            new_internet = request.form.get('new_internet')
+            if new_internet not in valid_tables:
+                flash("تیبل انتخابی نامعتبر است", "danger")
+            else:
+                try:
+                    remove_user_mangle(api, client_ip)
+                    add_user_mangle(api, client_ip, new_internet)
+                    flash(f"اینترنت کاربر {client_ip} تغییر کرد", "success")
+                except Exception as e:
+                    flash(f"خطا در تغییر اینترنت: {e}", "danger")
+
+        elif 'remove_internet' in request.form:
             try:
-                ipaddress.ip_address(client_ip)
-            except ValueError:
-                flash("آی‌پی وارد شده معتبر نیست", "danger")
-                return redirect(url_for('admin'))
-
-        if action == "remove":
-            if client_ip:
                 remove_user_mangle(api, client_ip)
-                flash(f"کاربر با آی‌پی {client_ip} حذف شد.", "success")
+                flash(f"اینترنت کاربر {client_ip} حذف شد و به پیش‌فرض برگشت", "success")
+            except Exception as e:
+                flash(f"خطا در حذف اینترنت: {e}", "danger")
+
+        elif 'change_default' in request.form:
+            iface = request.form.get('default_table')
+            gateways_map = get_interface_gateways(api)
+        
+            if iface not in gateways_map:
+                flash("برای این اینترفیس گیت‌وی معتبری یافت نشد", "danger")
             else:
-                flash("آی‌پی وارد نشده است.", "warning")
+                gateway_ip = gateways_map[iface]
+                try:
+                    route_res = api.get_resource('/ip/route')
+                    # حذف روت پیش‌فرض فعلی main
+                    for r in route_res.get():
+                        if r.get("dst-address") == "0.0.0.0/0" and r.get("routing-table", "main") == "main":
+                            route_res.remove(id=r["id"])
+        
+                    # افزودن روت جدید
+                    route_res.add(
+                        dst_address="0.0.0.0/0",
+                        gateway=gateway_ip,
+                        routing_table="main",
+                        comment="default-by-admin"
+                    )
+        
+                    flash("روت پیش‌فرض با موفقیت تنظیم شد", "success")
+                except Exception as e:
+                    flash(f"خطا در تنظیم روت پیش‌فرض: {e}", "danger")
 
-        elif action == "add":
-            routing_table = request.form.get("routing_table")
-            if not routing_table or routing_table not in table_interface_map:
-                flash("جدول روت انتخاب شده نامعتبر است.", "danger")
-            elif client_ip:
-                routing_mark = routing_table
-                add_user_mangle(api, client_ip, routing_mark)
-                flash(f"کاربر با آی‌پی {client_ip} اضافه شد و روتینگ با جدول {routing_table} انجام شد.", "success")
-            else:
-                flash("آی‌پی وارد نشده است.", "warning")
+            
 
-        elif action == "apply_routes":
-            apply_table_routes(api, table_interface_map)
-            flash("روت‌ها به‌روزرسانی شدند.", "success")
-
-        else:
-            flash("عملیات نامعتبر است.", "danger")
+        elif 'update_table_interfaces' in request.form:
+            try:
+                table_interface_map = {}
+                for key, value in request.form.items():
+                    if key.startswith("interface_for_"):
+                        table_id = key.replace("interface_for_", "")
+                        table_interface_map[table_id] = value
+        
+                cleaned_map = {key.replace("interface_for_", ""): val for key, val in table_interface_map.items()}
+                settings_data["table_interface_map"] = cleaned_map
+                save_settings(settings_data)
+                apply_table_routes(api, cleaned_map)
+                flash("تنظیمات ارتباط جدول‌ها با اینترفیس‌ها ذخیره شد", "success")
+            except Exception as e:
+                flash(f"خطا در ذخیره تنظیمات: {e}", "danger")
 
         return redirect(url_for('admin'))
 
-    # GET Request
-    interfaces = fetch_interfaces(api)
-    routing_tables = fetch_routing_tables(api)
-    dhcp_leases = get_dhcp_leases(api)
+    interfaces_raw = fetch_interfaces(api)
+    interfaces_map = settings_data.get("interfaces", {})
+    interfaces = {
+        i["name"]: interfaces_map.get(i["name"], i["name"])
+        for i in interfaces_raw
+    }
 
-    return render_template("admin.html",
-                           interfaces=interfaces,
-                           routing_tables=routing_tables,
-                           dhcp_leases=dhcp_leases,
-                           settings=settings_data)
-
-# ---------- 📌 صفحه کاربر ----------
-@app.route("/user", methods=["GET", "POST"])
-@require_role("user")
-def user():
-    api = connect_api()
-    if not api:
-        flash("عدم اتصال به API میکروتیک", "danger")
-        return render_template('user.html')
-
-    user_ip = get_user_ip()
-
-    # بررسی دسترسی IP
-    if not is_allowed_network(user_ip):
-        flash(f"آی‌پی شما ({user_ip}) مجاز نیست.", "danger")
-        session.clear()
-        return redirect(url_for('login'))
-
-    settings_data = load_settings()
     table_interface_map = settings_data.get("table_interface_map", {})
-    default_table = get_default_route(api)
+    interface_gateways = get_interface_gateways(api)
+    return render_template(
+        'admin.html',
+        leases=leases,
+        tables=friendly_tables,
+        default_route=default_route,
+        interfaces=interfaces,
+        table_interface_map=table_interface_map
+    )
 
-    if request.method == "POST":
-        routing_table = request.form.get("routing_table")
-        if routing_table not in table_interface_map:
-            flash("جدول روت انتخاب شده نامعتبر است.", "danger")
-            return redirect(url_for('user'))
-
-        add_user_mangle(api, user_ip, routing_table)
-        flash(f"تغییر اینترنت با جدول {routing_table} برای شما اعمال شد.", "success")
-        return redirect(url_for('user'))
-
-    return render_template("user.html",
-                           user_ip=user_ip,
-                           tables=table_interface_map,
-                           default_table=default_table)
-
-# ---------- 📌 صفحه اصلی ادمین ----------
-@app.route("/admin_dashboard")
-@require_role("admin")
-def admin_dashboard():
-    api = connect_api()
-    if not api:
-        flash("عدم اتصال به API میکروتیک", "danger")
-        return redirect(url_for('login'))
-
-    settings_data = load_settings()
-    table_interface_map = settings_data.get("table_interface_map", {})
-    interfaces = fetch_interfaces(api)
-    routing_tables = fetch_routing_tables(api)
-
-    return render_template('admin_dashboard.html',
-                           interfaces=interfaces,
-                           routing_tables=routing_tables,
-                           table_interface_map=table_interface_map)
-
-# ---------- 📌 صفحه خطا (اختیاری) ----------
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
-
-@app.errorhandler(500)
-def internal_error(e):
-    return render_template('500.html'), 500
-
-# ---------- 📌 اجرا ----------
+# اجرای اولیه هنگام بوت برنامه
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)
+    api = connect_api()
+    if api:
+        settings_data = load_settings()
+        if "table_interface_map" in settings_data:
+            apply_table_routes(api, settings_data["table_interface_map"])
+        else:
+            print("ℹ️ هیچ جدول متصل‌شده‌ای به اینترفیس‌ها یافت نشد.")
+    else:
+        print("⚠️ عدم موفقیت در اتصال به میکروتیک برای اعمال روت اولیه")
+
+    app.run(host="0.0.0.0", port=5000, debug=True)
