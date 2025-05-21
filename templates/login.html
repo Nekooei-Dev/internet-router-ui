@@ -3,27 +3,35 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ورود</title>
+    <title>ورود به سیستم</title>
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='css/fontawesome.min.css') }}" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet" />
 </head>
 <body class="bg-light">
-<div class="container mt-5" style="max-width: 400px;">
-    <h3 class="mb-4 text-center">ورود به سیستم</h3>
-    <form method="POST" action="{{ url_for('login') }}">
-        <div class="mb-3">
-            <label for="password" class="form-label">رمز عبور</label>
-            <input type="password" name="password" id="password" class="form-control" required />
+    <div class="container d-flex justify-content-center align-items-center vh-100">
+        <div class="card p-4 shadow-sm" style="width: 350px;">
+            <h3 class="text-center mb-4">ورود به سیستم</h3>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div>
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} small" role="alert">
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="mb-3">
+                    <label for="password" class="form-label">رمز عبور</label>
+                    <input type="password" name="password" class="form-control" id="password" placeholder="رمز عبور را وارد کنید" required autofocus />
+                </div>
+                <button type="submit" class="btn btn-primary w-100">ورود</button>
+            </form>
         </div>
-        <button type="submit" class="btn btn-primary w-100">ورود</button>
-    </form>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        <div class="alert alert-danger mt-3 small" role="alert">
-            {{ messages[0][1] }}
-        </div>
-    {% endif %}
-    {% endwith %}
-</div>
-<script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+    </div>
+    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
 </body>
 </html>
