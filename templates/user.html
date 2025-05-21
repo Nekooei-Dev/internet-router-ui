@@ -1,53 +1,36 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>کاربر - تغییر اینترنت</title>
-<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" />
-<link href="{{ url_for('static', filename='css/fontawesome.min.css') }}" rel="stylesheet" />
-<link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet" />
+    <meta charset="UTF-8">
+    <title>پنل کاربر</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="{{ url_for('index') }}">مدیریت اینترنت</a>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">درباره</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('user') }}">کاربر</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">خروج</a></li>
-      </ul>
-    </div>
-  </div>
-</nav>
-
-<div class="container mt-4">
-    <h2>اینترنت شما: {{ user_lease.comment if user_lease else "ناشناخته" }}</h2>
-    <p><strong>آی‌پی شما:</strong> {{ user_ip }}</p>
-
-        <form method="POST">
-          <label>انتخاب نوع اینترنت:</label>
-          <select name="internet_table" class="form-control">
-            {% for label, table in tables.items() %}
-              <option value="{{ table }}">{{ label }}</option>
-            {% endfor %}
-          </select>
-          <br>
-          <button type="submit" class="btn btn-primary">ثبت</button>
-        </form>
+    <h1>پنل انتخاب اینترنت</h1>
+    <p><a href="{{ url_for('logout') }}">خروج</a></p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        <div class="mt-3">
-            {% for category, msg in messages %}
-                <div class="alert alert-{{ category }}">{{ msg }}</div>
-            {% endfor %}
-        </div>
-    {% endif %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
     {% endwith %}
-</div>
 
-<script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+    <p><strong>آی‌پی شما:</strong> {{ user_ip }}</p>
+    {% if user_lease %}
+        <p><strong>دستگاه:</strong> {{ user_lease.host_name or "ناشناس" }}</p>
+        <p><strong>مک آدرس:</strong> {{ user_lease.mac_address }}</p>
+    {% endif %}
+
+    <form method="POST">
+        <label for="internet_table">انتخاب مسیر اینترنت:</label>
+        <select name="internet_table" id="internet_table">
+            {% for label, table in tables.items() %}
+                <option value="{{ table }}">{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">ذخیره</button>
+    </form>
 </body>
 </html>
