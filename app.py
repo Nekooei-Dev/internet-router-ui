@@ -1,6 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-from routeros_api import RouterOsApiPool, exceptions
+from routeros_api import RouterOsApiPool
+from routeros_api.exceptions import RouterOsApiCommunicationError, RouterOsApiConnectionError
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "9f7e2c45b6a14d9a8e4d31f0c5b2a7e1")
@@ -20,17 +21,26 @@ ALLOWED_NETWORKS = [net.strip() for net in os.environ.get(
 
 # تعریف تیبل های روتینگ (مانگل‌ها)
 ROUTING_TABLES = {
-    "default": "main",
-    "irancell": "irancell",
-    "mci": "mci",
-    "rightel": "rightel",
+    "پیش فرض": "main",
+    "همراه اول": "To-HamrahAval",
+    "ایرانسل": "To-IranCell",
+    "انتن وایرلس": "To-Anten",
+    "تلفن فروشگاه": "To-ADSL",
+}
+
+# تعریف اینتر فیس ها
+interfaces = {
+    "ایرانسل": "Ether1 - Irancell SIM Internet",
+    "همراه اول": "Ether2 - MCI SIM Internet",
+    "تلفن فروشگاه": "Ether3 - TCI ADSL Internet",
+    "انتن وایرلس": "Ether4 - Asiatech Wireless Internet",
 }
 
 def connect_api():
     try:
         api = RouterOsApiPool(API_HOST, username=API_USER, password=API_PASS, port=API_PORT, plaintext_login=True)
         return api.get_api()
-    except exceptions as e:
+    except (RouterOsApiCommunicationError, RouterOsApiConnectionError) as e:
         print(f"API Connection Error: {e}")
         return None
 
