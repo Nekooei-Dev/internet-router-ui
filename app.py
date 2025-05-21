@@ -177,24 +177,26 @@ def get_interface_gateways(api):
     routes = api.get_resource("/ip/route").get()
     gateways = {}
 
+    # 🧠 1. از روت‌ها
     for r in routes:
         iface = r.get("interface")
         gw = r.get("gateway")
         dst = r.get("dst-address")
 
-        # روت مستقیم یا روت پیش‌فرض دارای گیت‌وی
-        if gw:
-            if iface:
-                gateways[iface] = gw
-            elif dst == "0.0.0.0/0":
-                # اگر interface نیست، ولی روت پیش‌فرض داریم، سعی کنیم با کمک DHCP Client پیدا کنیم
-                dhcp_clients = api.get_resource("/ip/dhcp-client").get()
-                for client in dhcp_clients:
-                    if client.get("status") == "bound" and client.get("default-route", "") != "no":
-                        client_iface = client.get("interface")
-                        gateways[client_iface] = gw
-    return gateways
+        if iface and gw:
+            gateways[iface] = gw
 
+    # ✅ 2. از DHCP Client
+    dhcp_clients = api.get_resource("/ip/dhcp-client").get()
+    for client in dhcp_clients:
+        iface = client.get("interface")
+        gw = client.get("gateway")
+        status = client.get("status")
+
+        if iface and gw and status == "bound":
+            gateways[iface] = gw
+
+    return gateways
 # ---------- 📌 صفحه اصلی ----------
 @app.route("/")
 def index():
