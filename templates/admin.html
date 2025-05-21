@@ -73,5 +73,32 @@
         </select>
         <button type="submit" name="change_default">ذخیره</button>
     </form>
+
+    <hr>
+<h3>تنظیم مسیر جدول‌ها به اینترفیس‌ها</h3>
+<form method="post">
+    <table>
+        <tr>
+            <th>نام جدول</th>
+            <th>انتخاب اینترفیس</th>
+        </tr>
+        {% for t in tables %}
+        <tr>
+            <td>{{ t.name }}</td>
+            <td>
+                <select name="table_interface_map[{{ t.id }}]">
+                    {% for int_id, int_name in interfaces.items() %}
+                        <option value="{{ int_id }}" {% if table_interface_map.get(t.id) == int_id %}selected{% endif %}>
+                            {{ int_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <button type="submit" name="update_table_interfaces">ذخیره تنظیمات</button>
+</form>
+    
 </body>
 </html>
