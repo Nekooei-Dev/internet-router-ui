@@ -1,41 +1,35 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>پنل کاربر</title>
-    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" />
-    <link href="{{ url_for('static', filename='css/fontawesome.min.css') }}" rel="stylesheet" />
-    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>کاربر - تغییر اینترنت</title>
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" />
+<link href="{{ url_for('static', filename='css/fontawesome.min.css') }}" rel="stylesheet" />
+<link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet" />
 </head>
-<body class="bg-white">
-<nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom mb-3">
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
   <div class="container-fluid">
     <a class="navbar-brand" href="{{ url_for('index') }}">مدیریت اینترنت</a>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">خانه</a></li>
-        <li class="nav-item"><a class="nav-link text-primary" href="{{ url_for('user') }}">پنل کاربر</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">درباره</a></li>
-      </ul>
-      <ul class="navbar-nav">
-        <li class="nav-item"><a class="nav-link text-danger" href="{{ url_for('logout') }}">خروج</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('user') }}">کاربر</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">خروج</a></li>
       </ul>
     </div>
   </div>
 </nav>
-<div class="container">
-    <h2 class="mb-3">پنل کاربری شما</h2>
-    <p>آی‌پی شما: <strong>{{ user_ip }}</strong></p>
-    {% if user_lease %}
-    <p>وضعیت DHCP Lease: <strong>فعال</strong> - آدرس: {{ user_lease.address }}</p>
-    {% else %}
-    <p class="text-warning">آی‌پی شما در DHCP Lease پیدا نشد.</p>
-    {% endif %}
-    <form method="POST" action="{{ url_for('user') }}">
+
+<div class="container mt-4">
+    <h2>اینترنت شما: {{ user_lease.comment if user_lease else "ناشناخته" }}</h2>
+    <p><strong>آی‌پی شما:</strong> {{ user_ip }}</p>
+
+    <form method="POST">
         <div class="mb-3">
             <label for="internet_table" class="form-label">انتخاب اینترنت</label>
-            <select name="internet_table" id="internet_table" class="form-select" required>
+            <select id="internet_table" name="internet_table" class="form-select" required>
                 {% for table in tables %}
                 <option value="{{ table }}">{{ table }}</option>
                 {% endfor %}
@@ -43,18 +37,18 @@
         </div>
         <button type="submit" class="btn btn-primary">تغییر اینترنت</button>
     </form>
+
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
         <div class="mt-3">
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }} small" role="alert">
-                {{ message }}
-            </div>
+            {% for category, msg in messages %}
+                <div class="alert alert-{{ category }}">{{ msg }}</div>
             {% endfor %}
         </div>
     {% endif %}
     {% endwith %}
 </div>
+
 <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
 </body>
 </html>
