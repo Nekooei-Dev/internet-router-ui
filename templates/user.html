@@ -26,17 +26,16 @@
     <h2>اینترنت شما: {{ user_lease.comment if user_lease else "ناشناخته" }}</h2>
     <p><strong>آی‌پی شما:</strong> {{ user_ip }}</p>
 
-    <form method="POST">
-        <div class="mb-3">
-            <label for="internet_table" class="form-label">انتخاب اینترنت</label>
-            <select id="internet_table" name="internet_table" class="form-select" required>
-                {% for table in tables %}
-                <option value="{{ table }}">{{ table }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">تغییر اینترنت</button>
-    </form>
+        <form method="POST">
+          <label>انتخاب نوع اینترنت:</label>
+          <select name="internet_table" class="form-control">
+            {% for label, table in tables.items() %}
+              <option value="{{ table }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+          <br>
+          <button type="submit" class="btn btn-primary">ثبت</button>
+        </form>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
