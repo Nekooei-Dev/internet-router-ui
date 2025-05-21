@@ -72,9 +72,11 @@
                     <div class="col-md-4">
                         <select name="interface_for_{{ table.id }}" class="form-select">
                             {% for iface_id, iface_name in interfaces.items() %}
-                                <option value="{{ iface_id }}"
-                                    {% if table_interface_map.get(table.id) == iface_id %}selected{% endif %}>
-                                    {{ iface_name }}
+                                <option value="{{ t.id }}" {% if t.id == default_route %}selected{% endif %}>
+                                  {{ t.name }}
+                                  {% if table_interface_map.get(t.id) %}
+                                    ({{ interfaces.get(table_interface_map.get(t.id)) }})
+                                  {% endif %}
                                 </option>
                             {% endfor %}
                         </select>
