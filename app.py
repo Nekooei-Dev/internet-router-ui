@@ -346,10 +346,11 @@ def admin():
 
         elif 'update_table_interfaces' in request.form:
             try:
-                table_interface_map = {
-                    key: request.form[key]
-                    for key in request.form
-                    if key.startswith("interface_for_")
+                table_interface_map = {}
+                for key, value in request.form.items():
+                    if key.startswith("interface_for_"):
+                        table_id = key.replace("interface_for_", "")
+                        table_interface_map[table_id] = value
                 }
                 cleaned_map = {key.replace("interface_for_", ""): val for key, val in table_interface_map.items()}
                 settings_data["table_interface_map"] = cleaned_map
