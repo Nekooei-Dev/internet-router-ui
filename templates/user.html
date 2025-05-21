@@ -27,8 +27,10 @@
         <div class="mb-3">
             <label class="form-label">انتخاب اینترنت دلخواه:</label>
             <select name="internet_table" class="form-select">
-                {% for t in tables %}
-                    <option value="{{ t.id }}">{{ t.name }}</option>
+                {% for table in tables %}
+                  {% if table.id != "main" %}
+                    <option value="{{ table.id }}">{{ table.name }}</option>
+                  {% endif %}
                 {% endfor %}
             </select>
         </div>
