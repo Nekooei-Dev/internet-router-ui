@@ -355,5 +355,16 @@ def admin():
     )
 
 
+# اجرای اولیه هنگام بوت برنامه
 if __name__ == "__main__":
+    api = connect_api()
+    if api:
+        settings_data = load_settings()
+        if "table_interface_map" in settings_data:
+            apply_table_routes(api, settings_data["table_interface_map"])
+        else:
+            print("ℹ️ هیچ جدول متصل‌شده‌ای به اینترفیس‌ها یافت نشد.")
+    else:
+        print("⚠️ عدم موفقیت در اتصال به میکروتیک برای اعمال روت اولیه")
+
     app.run(host="0.0.0.0", port=5000, debug=True)
