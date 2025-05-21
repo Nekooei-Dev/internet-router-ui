@@ -128,7 +128,8 @@ def is_allowed_network(ip):
 
 # ---------- 📌 11. گرفتن DHCP لیست ----------
 def get_dhcp_leases(api):
-    return api.get_resource('/ip/dhcp-server/lease').get()
+    dhcp = api.get_resource("/ip/dhcp-server/lease")
+    return dhcp.get()
 
 # ---------- 📌 12. گرفتن روت پیش‌فرض ----------
 def get_default_route(api):
