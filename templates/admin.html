@@ -48,11 +48,13 @@
       <div class="form-group">
         <label for="default_table">انتخاب اینترفیس برای روت پیش‌فرض:</label>
         <select name="default_table" id="default_table" class="form-control">
-          {% for iface_id, iface_name in interfaces.items() %}
-            <option value="{{ iface_id }}" {% if iface_id == default_route %}selected{% endif %}>
-              {{ iface_id }} ({{ iface_name }})
-            </option>
-          {% endfor %}
+            {% for iface_id, iface_name in interfaces.items() %}
+                {% if iface_id in interface_gateways %}
+                      <option value="{{ iface_id }}">
+                        {{ iface_id }} ({{ iface_name }}) → گیت‌وی: {{ interface_gateways[iface_id] }}
+                      </option>
+                {% endif %}
+            {% endfor %}
         </select>
       </div>
       <button type="submit" name="change_default" class="btn btn-warning mt-2">
