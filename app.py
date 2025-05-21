@@ -331,19 +331,28 @@ def admin():
                 try:
                     route_res = api.get_resource('/ip/route')
                     routes = route_res.get()
-                    updated = False
-
+        
+                    # حذف روت‌های قبلی پیش‌فرض main
                     for r in routes:
                         if r.get('dst-address') == '0.0.0.0/0' and r.get('routing-table', 'main') == 'main':
-                            route_res.set(id=r['id'], routing_table=default_table)
-                            updated = True
-
-                    if updated:
-                        flash("اینترنت پیش‌فرض با موفقیت تغییر کرد", "success")
+                            route_res.remove(id=r['id'])
+        
+                    # گرفتن interface مربوط به تیبل انتخاب‌شده
+                    iface = table_interface_map.get(default_table)
+                    if iface:
+                        # اضافه کردن روت جدید برای main
+                        route_res.add(
+                            dst_address="0.0.0.0/0",
+                            gateway=iface,
+                            routing_table="main",
+                            comment="default-route"
+                        )
+                        flash("اینترنت پیش‌فرض با موفقیت تنظیم شد", "success")
                     else:
-                        flash("روت پیش‌فرض پیدا نشد", "danger")
+                        flash("اینترفیس مشخص برای تیبل انتخاب‌شده یافت نشد", "danger")
                 except Exception as e:
                     flash(f"خطا در تغییر اینترنت پیش‌فرض: {e}", "danger")
+            
 
         elif 'update_table_interfaces' in request.form:
             try:
