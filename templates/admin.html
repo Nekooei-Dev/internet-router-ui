@@ -49,9 +49,12 @@
             <div class="col-md-4">
                 <select name="default_table" class="form-select">
                     {% for table in tables %}
-                        <option value="{{ table.id }}" {% if table.id == default_route %}selected{% endif %}>
-                            {{ table.name }}
-                        </option>
+                        {% if table.id != "main" %}
+                            <option value="{{ table.id }}" {% if table.id == default_route %}selected{% endif %}>
+                                {{ table.name }} 
+                                {% if table_interface_map.get(table.id) %} ({{ interfaces.get(table_interface_map.get(table.id)) }}){% endif %}
+                            </option>
+                        {% endif %}
                     {% endfor %}
                 </select>
             </div>
