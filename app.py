@@ -287,6 +287,7 @@ def admin():
         return render_template('error.html', message="ارتباط با میکروتیک برقرار نشد")
 
     settings_data = load_settings()
+    table_interface_map = settings_data.get("table_interface_map", {})
     leases = get_dhcp_leases(api)
     routing_tables = fetch_routing_tables(api)
     default_route = get_default_route(api)
