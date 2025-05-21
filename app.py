@@ -175,30 +175,25 @@ def apply_table_routes(api, table_interface_map):
 # ---------- 📌 14. گرفتن گیت‌وی برای هر اینترفیس ----------
 def get_interface_gateways(api):
     routes = api.get_resource("/ip/route").get()
-    interface_gateway_map = {}
+    gateways = {}
 
     for r in routes:
         iface = r.get("interface")
         gw = r.get("gateway")
         dst = r.get("dst-address")
 
-        # فقط روت‌هایی با گیت‌وی معتبر و مقصد مشخص (نه 0.0.0.0/0)
-        if iface and gw and dst and dst != "0.0.0.0/0":
-            try:
-                prefix_len = int(dst.split("/")[1])
-                current_best = interface_gateway_map.get(iface)
-
-                if not current_best or prefix_len > current_best["prefix"]:
-                    interface_gateway_map[iface] = {
-                        "gateway": gw,
-                        "prefix": prefix_len
-                    }
-
-            except Exception as e:
-                print(f"⛔ خطا در پردازش route: {r}, خطا: {e}")
-
-    # فقط گیت‌وی‌ها رو برمی‌گردونیم
-    return {iface: data["gateway"] for iface, data in interface_gateway_map.items()}
+        # روت مستقیم یا روت پیش‌فرض دارای گیت‌وی
+        if gw:
+            if iface:
+                gateways[iface] = gw
+            elif dst == "0.0.0.0/0":
+                # اگر interface نیست، ولی روت پیش‌فرض داریم، سعی کنیم با کمک DHCP Client پیدا کنیم
+                dhcp_clients = api.get_resource("/ip/dhcp-client").get()
+                for client in dhcp_clients:
+                    if client.get("status") == "bound" and client.get("default-route", "") != "no":
+                        client_iface = client.get("interface")
+                        gateways[client_iface] = gw
+    return gateways
 
 # ---------- 📌 صفحه اصلی ----------
 @app.route("/")
