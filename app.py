@@ -156,6 +156,12 @@ def apply_table_routes(api, table_interface_map):
             except Exception as e:
                 print(f"خطا در اضافه کردن روت برای جدول {table}: {e}")
 
+
+# ---------- 📌 صفحه اصلی ----------
+@app.route("/")
+def index():
+    return redirect(url_for("login"))
+
 # ---------- 📌 Login ----------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
