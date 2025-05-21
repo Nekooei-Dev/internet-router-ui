@@ -351,7 +351,7 @@ def admin():
                     if key.startswith("interface_for_"):
                         table_id = key.replace("interface_for_", "")
                         table_interface_map[table_id] = value
-                }
+        
                 cleaned_map = {key.replace("interface_for_", ""): val for key, val in table_interface_map.items()}
                 settings_data["table_interface_map"] = cleaned_map
                 save_settings(settings_data)
