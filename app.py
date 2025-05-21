@@ -172,6 +172,22 @@ def apply_table_routes(api, table_interface_map):
             except Exception as e:
                 print(f"خطا در اضافه کردن روت برای جدول {table}: {e}")
 
+# ---------- 📌 14. گرفتن گیت‌وی برای هر اینترفیس ----------
+def get_interface_gateways(api):
+    routes = api.get_resource("/ip/route").get()
+    gateways = {}
+
+    for r in routes:
+        # فقط روت‌های مستقیم به یک گیت‌وی که به اینترفیس وصل هستن
+        iface = r.get("interface")
+        gw = r.get("gateway")
+        dst = r.get("dst-address")
+
+        if iface and gw and dst != "0.0.0.0/0":  # فیلتر: نه روت پیش‌فرض و نه بدون گیت‌وی
+            gateways[iface] = gw
+
+    return gateways
+
 
 # ---------- 📌 صفحه اصلی ----------
 @app.route("/")
