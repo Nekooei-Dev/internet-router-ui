@@ -42,14 +42,16 @@
                         {% endfor %}
                     </td>
                     <td>
-                        <input type="hidden" name="client_ip" value="{{ lease.address }}">
-                        <select name="new_internet">
-                            {% for label, table in tables.items() %}
-                                <option value="{{ table }}">{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit" name="change_internet">اعمال</button>
-                    </td>
+<form method="post">
+    <input type="hidden" name="client_ip" value="{{ lease.address }}">
+    <select name="new_internet">
+        {% for t in tables %}
+            <option value="{{ t.id }}">{{ t.name }}</option>
+        {% endfor %}
+    </select>
+    <button name="change_internet" type="submit">تغییر اینترنت</button>
+    <button name="remove_internet" type="submit">بازگشت به پیش‌فرض</button>
+</form>                    </td>
                     <td>
                         <input type="hidden" name="client_ip" value="{{ lease.address }}">
                         <button type="submit" name="remove_internet">حذف</button>
