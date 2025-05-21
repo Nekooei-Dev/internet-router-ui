@@ -23,14 +23,14 @@
         <p><strong>مک آدرس:</strong> {{ user_lease.mac_address }}</p>
     {% endif %}
 
-    <form method="POST">
-        <label for="internet_table">انتخاب مسیر اینترنت:</label>
-        <select name="internet_table" id="internet_table">
-            {% for label, table in tables.items() %}
-                <option value="{{ table }}">{{ label }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit">ذخیره</button>
-    </form>
+<form method="post">
+    <label for="internet_table">انتخاب اینترنت دلخواه:</label>
+    <select name="internet_table" id="internet_table" required>
+        {% for t in tables %}
+            <option value="{{ t.id }}">{{ t.name }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">تغییر اینترنت</button>
+</form>
 </body>
 </html>
