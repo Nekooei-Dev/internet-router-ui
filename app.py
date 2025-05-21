@@ -248,7 +248,7 @@ def user():
 
     if request.method == 'POST':
         selected_table = request.form.get('internet_table')
-        valid_ids = [tbl["id"] for tbl in routing_tables]
+        valid_ids = [tbl["name"] for tbl in routing_tables]  # اصلاح شده ✅
 
         if selected_table not in valid_ids:
             flash("تیبل انتخابی نامعتبر است", "danger")
@@ -286,10 +286,11 @@ def admin():
 
     if request.method == 'POST':
         client_ip = request.form.get('client_ip')
+        valid_tables = [t["name"] for t in routing_tables]  # اصلاح شده ✅
 
         if 'change_internet' in request.form:
             new_internet = request.form.get('new_internet')
-            if new_internet not in [t["id"] for t in routing_tables]:
+            if new_internet not in valid_tables:
                 flash("تیبل انتخابی نامعتبر است", "danger")
             else:
                 try:
@@ -308,17 +309,19 @@ def admin():
 
         elif 'change_default' in request.form:
             default_table = request.form.get('default_table')
-            if default_table not in [t["id"] for t in routing_tables]:
+            if default_table not in valid_tables:
                 flash("تیبل پیش‌فرض نامعتبر است", "danger")
             else:
                 try:
                     route_res = api.get_resource('/ip/route')
                     routes = route_res.get()
                     updated = False
+
                     for r in routes:
                         if r.get('dst-address') == '0.0.0.0/0':
                             route_res.set(id=r['id'], routing_table=default_table)
                             updated = True
+
                     if updated:
                         flash("اینترنت پیش‌فرض با موفقیت تغییر کرد", "success")
                     else:
@@ -360,7 +363,6 @@ def admin():
         interfaces=interfaces,
         table_interface_map=table_interface_map
     )
-
 
 # اجرای اولیه هنگام بوت برنامه
 if __name__ == "__main__":
