@@ -175,19 +175,30 @@ def apply_table_routes(api, table_interface_map):
 # ---------- 📌 14. گرفتن گیت‌وی برای هر اینترفیس ----------
 def get_interface_gateways(api):
     routes = api.get_resource("/ip/route").get()
-    gateways = {}
+    interface_gateway_map = {}
 
     for r in routes:
-        # فقط روت‌های مستقیم به یک گیت‌وی که به اینترفیس وصل هستن
         iface = r.get("interface")
         gw = r.get("gateway")
         dst = r.get("dst-address")
 
-        if iface and gw and dst != "0.0.0.0/0":  # فیلتر: نه روت پیش‌فرض و نه بدون گیت‌وی
-            gateways[iface] = gw
+        # فقط روت‌هایی با گیت‌وی معتبر و مقصد مشخص (نه 0.0.0.0/0)
+        if iface and gw and dst and dst != "0.0.0.0/0":
+            try:
+                prefix_len = int(dst.split("/")[1])
+                current_best = interface_gateway_map.get(iface)
 
-    return gateways
+                if not current_best or prefix_len > current_best["prefix"]:
+                    interface_gateway_map[iface] = {
+                        "gateway": gw,
+                        "prefix": prefix_len
+                    }
 
+            except Exception as e:
+                print(f"⛔ خطا در پردازش route: {r}, خطا: {e}")
+
+    # فقط گیت‌وی‌ها رو برمی‌گردونیم
+    return {iface: data["gateway"] for iface, data in interface_gateway_map.items()}
 
 # ---------- 📌 صفحه اصلی ----------
 @app.route("/")
