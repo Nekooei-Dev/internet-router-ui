@@ -1,14 +1,14 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from backend.routes.helpers import (
-    connect_api, get_user_ip, is_allowed_network,
-    get_dhcp_leases, fetch_routing_tables,
-    remove_user_mangle, add_user_mangle, load_settings
+    connect_api, get_user_ip, is_allowed_network, get_dhcp_leases,
+    fetch_routing_tables, remove_user_mangle, add_user_mangle,
+    load_settings
 )
 
 user_bp = Blueprint("user", __name__)
 
 @user_bp.route("/user", methods=["GET", "POST"])
-def user_panel():
+def user():
     if session.get("role") != "user":
         return redirect(url_for("auth.login"))
 
@@ -18,10 +18,10 @@ def user_panel():
 
     user_ip = get_user_ip()
     if not is_allowed_network(user_ip):
-        return render_template("error.html", message="آی‌پی شما مجاز نیست")
+        return render_template("error.html", message="دسترسی آی‌پی شما مجاز نیست")
 
     leases = get_dhcp_leases(api)
-    user_lease = next((lease for lease in leases if lease.get('address') == user_ip), None)
+    user_lease = next((lease for lease in leases if lease.get("address") == user_ip), None)
 
     settings_data = load_settings()
     routing_tables = fetch_routing_tables(api)
@@ -30,12 +30,11 @@ def user_panel():
         {
             "id": tbl["name"],
             "name": settings_data.get("routing_tables", {}).get(tbl["name"], tbl["name"])
-        } for tbl in routing_tables
-        if tbl["name"] != "main"
+        } for tbl in routing_tables if tbl["name"] != "main"
     ]
 
-    if request.method == 'POST':
-        selected_table = request.form.get('internet_table')
+    if request.method == "POST":
+        selected_table = request.form.get("internet_table")
         valid_ids = [tbl["name"] for tbl in routing_tables]
 
         if selected_table not in valid_ids:
