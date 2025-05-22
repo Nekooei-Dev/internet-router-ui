@@ -6,18 +6,18 @@
     <div class="row justify-content-center mt-4">
       {% if session.get('role') == 'admin' %}
         <div class="col-md-3">
-          <a href="{{ url_for('admin.index') }}" class="btn btn-outline-primary w-100 mb-2">
+          <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-primary w-100 mb-2">
             <i class="fas fa-tools"></i> بخش مدیریت
           </a>
         </div>
         <div class="col-md-3">
-          <a href="{{ url_for('settings') }}" class="btn btn-outline-secondary w-100 mb-2">
+          <a href="{{ url_for('settings.settings') }}" class="btn btn-outline-secondary w-100 mb-2">
             <i class="fas fa-cogs"></i> تنظیمات
           </a>
         </div>
       {% elif session.get('role') == 'user' %}
         <div class="col-md-3">
-          <a href="{{ url_for('user.index') }}" class="btn btn-outline-info w-100 mb-2">
+          <a href="{{ url_for('user.user_dashboard') }}" class="btn btn-outline-info w-100 mb-2">
             <i class="fas fa-user"></i> پنل کاربر
           </a>
         </div>
