@@ -14,10 +14,10 @@ def login():
         password = request.form.get("password")
         if password == WEB_ADMIN_PASSWORD:
             session["role"] = "admin"
-            return redirect(url_for("common.dashboard"))
+            return redirect(url_for("common.index"))
         elif password == WEB_USER_PASSWORD:
             session["role"] = "user"
-            return redirect(url_for("common.dashboard"))
+            return redirect(url_for("common.index"))
         else:
             flash("رمز عبور اشتباه است", "danger")
     return render_template("login.html")
