@@ -1,26 +1,34 @@
-from flask import Blueprint, render_template, redirect, url_for, session
+from flask import Blueprint, render_template, session, redirect, url_for
 
 common_bp = Blueprint("common", __name__)
 
-# صفحه اصلی داشبورد پس از ورود
 @common_bp.route("/")
 def index():
-    if "role" not in session:
-        return redirect(url_for("auth.login"))
-    return render_template("index.html", role=session["role"])
+    role = session.get("role")
+    if role == "admin":
+        return redirect(url_for("admin.admin"))
+    elif role == "user":
+        return redirect(url_for("user.user"))
+    return redirect(url_for("auth.login"))
 
-# صفحه درباره ما
+@common_bp.route("/dashboard")
+def dashboard():
+    role = session.get("role")
+    if not role:
+        return redirect(url_for("auth.login"))
+    return render_template("index.html", role=role)
+
 @common_bp.route("/about")
 def about():
     return render_template("about.html")
 
-# صفحه خطاها
-@common_bp.route("/error")
-def error():
-    return render_template("error.html", message="خطایی رخ داده است")
-
-# خروج از حساب کاربری
 @common_bp.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("auth.login"))
+
+@common_bp.app_errorhandler(403)
+@common_bp.app_errorhandler(404)
+@common_bp.app_errorhandler(500)
+def error_handler(e):
+    return render_template("error.html", message=str(e)), e.code if hasattr(e, 'code') else 500
