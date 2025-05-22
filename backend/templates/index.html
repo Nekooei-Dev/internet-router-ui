@@ -11,53 +11,40 @@
 {% include 'navbar.html' %}
 
 <div class="container mt-5">
-    <div class="text-center mb-4">
-        <h2>👋 خوش آمدید</h2>
-        <p class="lead">شما با نقش <strong>{{ role | upper }}</strong> وارد شدید.</p>
-    </div>
+  <div class="text-center">
+    <h2 class="mb-4">🎉 خوش آمدید!</h2>
+    <p>شما به عنوان <strong>{{ 'مدیر' if role == 'admin' else 'کاربر' }}</strong> وارد شدید.</p>
 
-    <div class="row justify-content-center">
-        {% if role == 'admin' %}
-        <div class="col-md-4">
-            <div class="card border-primary">
-                <div class="card-body text-center">
-                    <i class="fas fa-tools fa-2x mb-3 text-primary"></i>
-                    <h5 class="card-title">مدیریت اینترنت</h5>
-                    <a href="{{ url_for('admin.admin_page') }}" class="btn btn-outline-primary mt-2">ورود به پنل مدیریت</a>
-                </div>
-            </div>
+    <div class="row justify-content-center mt-4">
+      {% if role == 'admin' %}
+        <div class="col-md-3">
+          <a href="{{ url_for('admin.admin_panel') }}" class="btn btn-outline-primary w-100 my-2">
+            <i class="fas fa-tools me-2"></i> مدیریت اینترنت کاربران
+          </a>
+          <a href="{{ url_for('settings.settings') }}" class="btn btn-outline-warning w-100 my-2">
+            <i class="fas fa-cogs me-2"></i> تنظیمات اولیه
+          </a>
         </div>
+      {% elif role == 'user' %}
+        <div class="col-md-3">
+          <a href="{{ url_for('user.user_panel') }}" class="btn btn-outline-success w-100 my-2">
+            <i class="fas fa-wifi me-2"></i> انتخاب اینترنت دلخواه
+          </a>
+        </div>
+      {% endif %}
 
-        <div class="col-md-4">
-            <div class="card border-warning">
-                <div class="card-body text-center">
-                    <i class="fas fa-cogs fa-2x mb-3 text-warning"></i>
-                    <h5 class="card-title">تنظیمات اولیه</h5>
-                    <a href="{{ url_for('admin.settings') }}" class="btn btn-outline-warning mt-2">تنظیم نام‌ها</a>
-                </div>
-            </div>
-        </div>
-        {% elif role == 'user' %}
-        <div class="col-md-6">
-            <div class="card border-success">
-                <div class="card-body text-center">
-                    <i class="fas fa-network-wired fa-2x mb-3 text-success"></i>
-                    <h5 class="card-title">تغییر مسیر اینترنت</h5>
-                    <a href="{{ url_for('user.user_page') }}" class="btn btn-outline-success mt-2">ورود به صفحه کاربر</a>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-
-    <div class="text-center mt-5">
-        <a href="{{ url_for('auth.logout') }}" class="btn btn-danger">
-            <i class="fas fa-sign-out-alt"></i> خروج از حساب
+      <div class="col-md-3">
+        <a href="{{ url_for('about') }}" class="btn btn-outline-info w-100 my-2">
+          <i class="fas fa-info-circle me-2"></i> درباره
         </a>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger w-100 my-2">
+          <i class="fas fa-sign-out-alt me-2"></i> خروج از حساب
+        </a>
+      </div>
     </div>
+  </div>
 </div>
 
-    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
-    {% include 'footer.html' %}
+{% include 'footer.html' %}
 </body>
 </html>
