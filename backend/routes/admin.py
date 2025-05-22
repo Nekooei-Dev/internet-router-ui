@@ -15,7 +15,7 @@ def restrict_to_admin():
         return redirect(url_for("auth.login"))
 
 
-@admin_bp.route("/", methods=["GET", "POST"])
+@admin_bp.route("/", methods=["GET", "POST"], endpoint="index")
 def admin_dashboard():
     api = connect_api()
     if not api:
