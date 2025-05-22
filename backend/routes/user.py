@@ -1,16 +1,21 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
-from backend.routes.helpers import (
-    connect_api, get_user_ip, is_allowed_network, get_dhcp_leases,
-    fetch_routing_tables, remove_user_mangle, add_user_mangle,
+from utils.api_tools import (
+    connect_api,
+    get_user_ip,
+    is_allowed_network,
+    remove_user_mangle,
+    add_user_mangle,
+    get_dhcp_leases,
+    fetch_routing_tables,
     load_settings
 )
 
-user_bp = Blueprint("user", __name__)
+user_bp = Blueprint("user", __name__, url_prefix="/user")
 
-@user_bp.route("/user", methods=["GET", "POST"])
-def user():
-    if session.get("role") != "user":
-        return redirect(url_for("auth.login"))
+@user_bp.route("/", methods=["GET", "POST"])
+def user_panel():
+    if 'role' not in session or session['role'] != 'user':
+        return redirect(url_for('auth.login'))
 
     api = connect_api()
     if not api:
@@ -18,10 +23,10 @@ def user():
 
     user_ip = get_user_ip()
     if not is_allowed_network(user_ip):
-        return render_template("error.html", message="دسترسی آی‌پی شما مجاز نیست")
+        return render_template("error.html", message="آی‌پی شما مجاز نیست")
 
     leases = get_dhcp_leases(api)
-    user_lease = next((lease for lease in leases if lease.get("address") == user_ip), None)
+    user_lease = next((lease for lease in leases if lease.get('address') == user_ip), None)
 
     settings_data = load_settings()
     routing_tables = fetch_routing_tables(api)
@@ -33,9 +38,9 @@ def user():
         } for tbl in routing_tables if tbl["name"] != "main"
     ]
 
-    if request.method == "POST":
-        selected_table = request.form.get("internet_table")
-        valid_ids = [tbl["name"] for tbl in routing_tables]
+    if request.method == 'POST':
+        selected_table = request.form.get('internet_table')
+        valid_ids = [tbl["id"] for tbl in friendly_tables]
 
         if selected_table not in valid_ids:
             flash("تیبل انتخابی نامعتبر است", "danger")
@@ -48,7 +53,7 @@ def user():
                 flash(f"خطا در تغییر اینترنت: {e}", "danger")
 
     return render_template(
-        "user.html",
+        'user.html',
         user_ip=user_ip,
         user_lease=user_lease,
         tables=friendly_tables
