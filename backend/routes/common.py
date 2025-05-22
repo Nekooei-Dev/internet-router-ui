@@ -20,7 +20,7 @@ def logout():
     session.clear()
     return redirect(url_for("auth.login"))
 
-@common_bp.route("/settings", methods=["GET", "POST"])
+@common_bp.route("/settings", methods=["GET", "POST"], endpoint="settings")
 def settings_redirect():
     # اگر کسی مستقیم خواست /settings رو بزنه، فقط ادمین‌ها اجازه دارن
     if session.get("role") != "admin":
