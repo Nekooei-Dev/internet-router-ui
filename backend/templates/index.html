@@ -1,21 +1,62 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8" />
-    <title>صفحه اصلی</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <meta charset="UTF-8">
+    <title>داشبورد</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.rtl.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/fontawesome.min.css') }}">
 </head>
 <body class="bg-light">
-    <div class="container mt-4">
-        <h3>خوش آمدید</h3>
-        <p>شما وارد شده‌اید.</p>
-        {% if session.role == "admin" %}
-        <a href="{{ url_for('admin.admin_panel') }}" class="btn btn-primary">پنل مدیریت</a>
-        {% elif session.role == "user" %}
-        <a href="{{ url_for('user.user_panel') }}" class="btn btn-primary">پنل کاربر</a>
-        {% endif %}
-        <a href="{{ url_for('common.logout') }}" class="btn btn-secondary ms-2">خروج</a>
+
+{% include 'navbar.html' %}
+
+<div class="container mt-5">
+    <div class="text-center mb-4">
+        <h2>👋 خوش آمدید</h2>
+        <p class="lead">شما با نقش <strong>{{ role | upper }}</strong> وارد شدید.</p>
     </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <div class="row justify-content-center">
+        {% if role == 'admin' %}
+        <div class="col-md-4">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="fas fa-tools fa-2x mb-3 text-primary"></i>
+                    <h5 class="card-title">مدیریت اینترنت</h5>
+                    <a href="{{ url_for('admin.admin_page') }}" class="btn btn-outline-primary mt-2">ورود به پنل مدیریت</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="fas fa-cogs fa-2x mb-3 text-warning"></i>
+                    <h5 class="card-title">تنظیمات اولیه</h5>
+                    <a href="{{ url_for('admin.settings') }}" class="btn btn-outline-warning mt-2">تنظیم نام‌ها</a>
+                </div>
+            </div>
+        </div>
+        {% elif role == 'user' %}
+        <div class="col-md-6">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-network-wired fa-2x mb-3 text-success"></i>
+                    <h5 class="card-title">تغییر مسیر اینترنت</h5>
+                    <a href="{{ url_for('user.user_page') }}" class="btn btn-outline-success mt-2">ورود به صفحه کاربر</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="text-center mt-5">
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-danger">
+            <i class="fas fa-sign-out-alt"></i> خروج از حساب
+        </a>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
 </body>
 </html>
