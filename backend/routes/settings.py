@@ -1,8 +1,5 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
-from backend.routes.helpers import (
-    connect_api, fetch_interfaces, fetch_routing_tables,
-    load_settings, save_settings
-)
+from backend.routes.helpers import connect_api, fetch_interfaces, fetch_routing_tables, load_settings, save_settings
 
 settings_bp = Blueprint("settings", __name__)
 
@@ -13,32 +10,32 @@ def settings():
 
     api = connect_api()
     if not api:
-        return render_template("error.html", message="عدم اتصال به API میکروتیک")
+        return render_template("error.html", message="عدم اتصال به میکروتیک")
 
-    settings_data = load_settings()
     interfaces = fetch_interfaces(api)
     routing_tables = fetch_routing_tables(api)
+    settings_data = load_settings()
 
     if request.method == "POST":
         new_interface_names = {}
         for iface in interfaces:
-            iface_id = iface.get("name")
-            friendly_name = request.form.get(f"iface_{iface_id}", "").strip()
-            if friendly_name:
-                new_interface_names[iface_id] = friendly_name
+            name = iface["name"]
+            friendly = request.form.get(f"iface_{name}", "").strip()
+            if friendly:
+                new_interface_names[name] = friendly
 
-        new_routing_names = {}
-        for table in routing_tables:
-            table_id = table.get("name")
-            friendly_name = request.form.get(f"table_{table_id}", "").strip()
-            if friendly_name:
-                new_routing_names[table_id] = friendly_name
+        new_table_names = {}
+        for tbl in routing_tables:
+            name = tbl["name"]
+            friendly = request.form.get(f"table_{name}", "").strip()
+            if friendly:
+                new_table_names[name] = friendly
 
         settings_data["interfaces"] = new_interface_names
-        settings_data["routing_tables"] = new_routing_names
+        settings_data["routing_tables"] = new_table_names
         save_settings(settings_data)
 
-        flash("تنظیمات با موفقیت ذخیره شد", "success")
+        flash("تنظیمات ذخیره شد", "success")
         return redirect(url_for("settings.settings"))
 
     return render_template(
