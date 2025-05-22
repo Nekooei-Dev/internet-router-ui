@@ -1,47 +1,41 @@
 {% include 'navbar.html' %}
+<div class="container mt-4">
+  <h3 class="mb-4"><i class="fas fa-user"></i> پنل کاربر</h3>
 
-<div class="container mt-5">
-    <div class="card shadow">
-        <div class="card-header bg-info text-white">
-            <h5 class="mb-0"><i class="fas fa-user me-2"></i>پنل کاربر - انتخاب مسیر اینترنت</h5>
-        </div>
-        <div class="card-body">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
 
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                {% for category, message in messages %}
-                  <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-              {% endif %}
-            {% endwith %}
+  <div class="mb-3">
+    <p><strong>IP:</strong> {{ user_ip }}</p>
+    {% if user_lease %}
+      <p><strong>MAC:</strong> {{ user_lease['mac-address'] }}</p>
+      <p><strong>Host:</strong> {{ user_lease.get('host-name', '---') }}</p>
+    {% endif %}
+  </div>
 
-            <p>💻 <strong>IP شما:</strong> {{ user_ip }}</p>
-            {% if user_lease %}
-                <p>🔌 <strong>MAC:</strong> {{ user_lease['mac-address'] }}</p>
-                <p>🏷️ <strong>Host:</strong> {{ user_lease.get('host-name', '---') }}</p>
+  <div class="card shadow">
+    <div class="card-body">
+      <form method="POST">
+        <label class="form-label">انتخاب اینترنت:</label>
+        <select name="internet_table" class="form-select mb-3">
+          {% for table in tables %}
+            {% if table.id != "main" %}
+              <option value="{{ table.id }}">{{ table.name }}</option>
             {% endif %}
-
-            <form method="POST">
-                <div class="mb-3">
-                    <label class="form-label">🌍 انتخاب اینترنت دلخواه:</label>
-                    <select name="internet_table" class="form-select" required>
-                        {% for table in tables %}
-                            <option value="{{ table.id }}">{{ table.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-network-wired me-2"></i>اعمال تغییر مسیر
-                </button>
-            </form>
-        </div>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">ثبت انتخاب</button>
+      </form>
     </div>
+  </div>
 
-    <div class="text-center mt-4">
-        <a href="{{ url_for('common.dashboard') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>بازگشت به داشبورد
-        </a>
-    </div>
+  <div class="text-center mt-4">
+    <a href="{{ url_for('index') }}" class="btn btn-outline-dark">
+      <i class="fas fa-arrow-left"></i> بازگشت به داشبورد
+    </a>
+  </div>
 </div>
-
 {% include 'footer.html' %}
