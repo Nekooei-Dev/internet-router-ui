@@ -1,39 +1,53 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
-from backend.routes.helpers import connect_api, fetch_routing_tables, fetch_interfaces, get_dhcp_leases, remove_user_mangle, add_user_mangle, load_settings, save_settings, apply_table_routes, get_interface_gateways, get_default_route
+from backend.routes.helpers import (
+    connect_api, fetch_routing_tables, fetch_interfaces,
+    get_dhcp_leases, get_default_route, get_interface_gateways,
+    load_settings, save_settings, apply_table_routes,
+    remove_user_mangle, add_user_mangle
+)
 
-admin_bp = Blueprint("admin", __name__)
+admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
-@admin_bp.route("/admin", methods=["GET", "POST"])
-def admin_panel():
+
+@admin_bp.before_request
+def restrict_to_admin():
     if session.get("role") != "admin":
         return redirect(url_for("auth.login"))
 
+
+@admin_bp.route("/", methods=["GET", "POST"])
+def admin_dashboard():
     api = connect_api()
     if not api:
         return render_template("error.html", message="ارتباط با میکروتیک برقرار نشد")
 
-    settings_data = load_settings()
+    settings = load_settings()
     leases = get_dhcp_leases(api)
     routing_tables = fetch_routing_tables(api)
     default_route = get_default_route(api)
-    interface_gateways = get_interface_gateways(api)
     interfaces_raw = fetch_interfaces(api)
+    interface_gateways = get_interface_gateways(api)
 
-    # نمایش دوستانه نام‌ها
-    interfaces_map = settings_data.get("interfaces", {})
-    interfaces = {i["name"]: interfaces_map.get(i["name"], i["name"]) for i in interfaces_raw}
+    interfaces_map = settings.get("interfaces", {})
+    interfaces = {
+        i["name"]: interfaces_map.get(i["name"], i["name"])
+        for i in interfaces_raw
+    }
+
+    table_interface_map = settings.get("table_interface_map", {})
+
     friendly_tables = [
         {
             "id": tbl["name"],
-            "name": settings_data.get("routing_tables", {}).get(tbl["name"], tbl["name"])
+            "name": settings.get("routing_tables", {}).get(tbl["name"], tbl["name"])
         } for tbl in routing_tables
     ]
-    table_interface_map = settings_data.get("table_interface_map", {})
 
-    if request.method == 'POST':
+    if request.method == "POST":
         client_ip = request.form.get("client_ip")
-        valid_tables = [t["name"] for t in routing_tables]
+        valid_tables = [tbl["name"] for tbl in routing_tables]
 
+        # تغییر اینترنت کاربر
         if "change_internet" in request.form:
             new_table = request.form.get("new_internet")
             if new_table not in valid_tables:
@@ -46,6 +60,7 @@ def admin_panel():
                 except Exception as e:
                     flash(f"خطا در تغییر اینترنت: {e}", "danger")
 
+        # حذف اینترنت کاربر
         elif "remove_internet" in request.form:
             try:
                 remove_user_mangle(api, client_ip)
@@ -53,9 +68,11 @@ def admin_panel():
             except Exception as e:
                 flash(f"خطا در حذف اینترنت: {e}", "danger")
 
+        # تغییر دیفالت روت
         elif "change_default" in request.form:
             iface = request.form.get("default_table")
             gateways_map = get_interface_gateways(api)
+
             if iface not in gateways_map:
                 flash("برای این اینترفیس گیت‌وی معتبری یافت نشد", "danger")
             else:
@@ -71,25 +88,26 @@ def admin_panel():
                         routing_table="main",
                         comment="default-by-admin"
                     )
-                    flash("روت پیش‌فرض با موفقیت اعمال شد", "success")
+                    flash("روت پیش‌فرض تنظیم شد", "success")
                 except Exception as e:
                     flash(f"خطا در تنظیم روت پیش‌فرض: {e}", "danger")
 
+        # تنظیم ارتباط جدول و اینترفیس
         elif "update_table_interfaces" in request.form:
             try:
                 table_interface_map = {}
-                for key, value in request.form.items():
+                for key, val in request.form.items():
                     if key.startswith("interface_for_"):
                         table_id = key.replace("interface_for_", "")
-                        table_interface_map[table_id] = value
-                settings_data["table_interface_map"] = table_interface_map
-                save_settings(settings_data)
+                        table_interface_map[table_id] = val
+                settings["table_interface_map"] = table_interface_map
+                save_settings(settings)
                 apply_table_routes(api, table_interface_map)
-                flash("تنظیمات جدول-اینترفیس ذخیره شد", "success")
+                flash("ارتباط جدول‌ها با اینترفیس‌ها ذخیره شد", "success")
             except Exception as e:
-                flash(f"خطا در ذخیره تنظیمات: {e}", "danger")
+                flash(f"خطا در ذخیره ارتباط: {e}", "danger")
 
-        return redirect(url_for("admin.admin_panel"))
+        return redirect(url_for("admin.admin_dashboard"))
 
     return render_template(
         "admin.html",
@@ -99,4 +117,40 @@ def admin_panel():
         interfaces=interfaces,
         table_interface_map=table_interface_map,
         interface_gateways=interface_gateways
+    )
+
+
+@admin_bp.route("/settings", methods=["GET", "POST"])
+def admin_settings():
+    api = connect_api()
+    if not api:
+        return render_template("error.html", message="عدم اتصال به API میکروتیک")
+
+    settings = load_settings()
+    interfaces = fetch_interfaces(api)
+    routing_tables = fetch_routing_tables(api)
+
+    if request.method == "POST":
+        new_interfaces = {}
+        for iface in interfaces:
+            name = iface.get("name")
+            new_interfaces[name] = request.form.get(f"iface_{name}", "").strip()
+
+        new_tables = {}
+        for table in routing_tables:
+            name = table.get("name")
+            new_tables[name] = request.form.get(f"table_{name}", "").strip()
+
+        settings["interfaces"] = new_interfaces
+        settings["routing_tables"] = new_tables
+        save_settings(settings)
+
+        flash("تنظیمات ذخیره شد", "success")
+        return redirect(url_for("admin.admin_settings"))
+
+    return render_template(
+        "settings.html",
+        interfaces=interfaces,
+        routing_tables=routing_tables,
+        settings=settings
     )
