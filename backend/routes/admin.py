@@ -120,7 +120,7 @@ def admin_dashboard():
     )
 
 
-@admin_bp.route("/settings", methods=["GET", "POST"])
+@admin_bp.route("/settings", methods=["GET", "POST"], endpoint="admin_settings")
 def admin_settings():
     api = connect_api()
     if not api:
