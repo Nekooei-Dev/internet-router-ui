@@ -13,7 +13,7 @@ def restrict_to_user():
         return redirect(url_for("auth.login"))
 
 
-@user_bp.route("/", methods=["GET", "POST"])
+@user_bp.route("/", methods=["GET", "POST"], endpoint="index")
 def user_dashboard():
     api = connect_api()
     if not api:
