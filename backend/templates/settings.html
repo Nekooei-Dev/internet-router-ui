@@ -1,0 +1,52 @@
+{% include 'navbar.html' %}
+
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>تنظیمات نام‌گذاری جدول‌ها و اینترفیس‌ها</h5>
+        </div>
+        <div class="card-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <form method="POST">
+                <h6 class="text-muted mb-3">📡 نام دوستانه برای اینترفیس‌ها</h6>
+                {% for iface in interfaces %}
+                    <div class="mb-2">
+                        <label class="form-label">{{ iface.name }}</label>
+                        <input type="text" class="form-control" name="iface_{{ iface.name }}"
+                               value="{{ settings.interfaces.get(iface.name, '') }}">
+                    </div>
+                {% endfor %}
+
+                <hr class="my-4">
+
+                <h6 class="text-muted mb-3">🛣️ نام دوستانه برای جدول‌های روت</h6>
+                {% for table in routing_tables %}
+                    <div class="mb-2">
+                        <label class="form-label">{{ table.name }}</label>
+                        <input type="text" class="form-control" name="table_{{ table.name }}"
+                               value="{{ settings.routing_tables.get(table.name, '') }}">
+                    </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-success mt-3">
+                    <i class="fas fa-save me-2"></i>ذخیره تنظیمات
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('common.dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>بازگشت به داشبورد
+        </a>
+    </div>
+</div>
+
+{% include 'footer.html' %}
