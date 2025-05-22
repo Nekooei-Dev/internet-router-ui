@@ -1,19 +1,18 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom mb-4">
-  <div class="container-fluid">
-    <a class="navbar-brand fw-bold" href="{{ url_for('common.index') }}">
-      <i class="fas fa-network-wired me-1"></i> مدیریت اینترنت
+<nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+  <div class="container">
+    <a class="navbar-brand" href="{{ url_for('index') }}">
+      <i class="fas fa-network-wired"></i> پنل مدیریت اینترنت
     </a>
     <div class="collapse navbar-collapse">
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('common.about') }}">درباره</a></li>
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">درباره</a></li>
         {% if session.get('role') == 'admin' %}
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.admin_panel') }}">مدیریت</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('settings.settings') }}">تنظیمات</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.index') }}">مدیریت</a></li>
         {% elif session.get('role') == 'user' %}
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('user.user_panel') }}">کاربر</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('user.index') }}">کاربر</a></li>
         {% endif %}
         {% if session.get('role') %}
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('common.logout') }}">خروج</a></li>
+        <li class="nav-item"><a class="nav-link text-danger" href="{{ url_for('auth.logout') }}">خروج</a></li>
         {% endif %}
       </ul>
     </div>
