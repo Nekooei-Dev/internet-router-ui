@@ -7,9 +7,9 @@
       <ul class="navbar-nav ms-auto">
         <li class="nav-item"><a class="nav-link" href="{{ url_for('common.about') }}">درباره</a></li>
         {% if session.get('role') == 'admin' %}
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.index') }}">مدیریت</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">مدیریت</a></li>
         {% elif session.get('role') == 'user' %}
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('user.index') }}">کاربر</a></li>
+        <li class="nav-item">+ <a class="nav-link" href="{{ url_for('user.user_dashboard') }}">کاربر</a></li>
         {% endif %}
         {% if session.get('role') %}
         <li class="nav-item"><a class="nav-link text-danger" href="{{ url_for('auth.logout') }}">خروج</a></li>
