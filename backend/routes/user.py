@@ -1,21 +1,12 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
-from utils.api_tools import (
-    connect_api,
-    get_user_ip,
-    is_allowed_network,
-    remove_user_mangle,
-    add_user_mangle,
-    get_dhcp_leases,
-    fetch_routing_tables,
-    load_settings
-)
+from backend.routes.helpers import connect_api, get_user_ip, is_allowed_network, get_dhcp_leases, fetch_routing_tables, remove_user_mangle, add_user_mangle, load_settings
 
-user_bp = Blueprint("user", __name__, url_prefix="/user")
+user_bp = Blueprint("user", __name__)
 
-@user_bp.route("/", methods=["GET", "POST"])
+@user_bp.route("/user", methods=["GET", "POST"])
 def user_panel():
-    if 'role' not in session or session['role'] != 'user':
-        return redirect(url_for('auth.login'))
+    if session.get("role") != "user":
+        return redirect(url_for("auth.login"))
 
     api = connect_api()
     if not api:
@@ -26,10 +17,11 @@ def user_panel():
         return render_template("error.html", message="آی‌پی شما مجاز نیست")
 
     leases = get_dhcp_leases(api)
-    user_lease = next((lease for lease in leases if lease.get('address') == user_ip), None)
+    user_lease = next((lease for lease in leases if lease.get("address") == user_ip), None)
 
     settings_data = load_settings()
     routing_tables = fetch_routing_tables(api)
+    valid_ids = [tbl["name"] for tbl in routing_tables]
 
     friendly_tables = [
         {
@@ -38,9 +30,8 @@ def user_panel():
         } for tbl in routing_tables if tbl["name"] != "main"
     ]
 
-    if request.method == 'POST':
-        selected_table = request.form.get('internet_table')
-        valid_ids = [tbl["id"] for tbl in friendly_tables]
+    if request.method == "POST":
+        selected_table = request.form.get("internet_table")
 
         if selected_table not in valid_ids:
             flash("تیبل انتخابی نامعتبر است", "danger")
@@ -48,13 +39,8 @@ def user_panel():
             try:
                 remove_user_mangle(api, user_ip)
                 add_user_mangle(api, user_ip, selected_table)
-                flash("اینترنت شما با موفقیت تغییر کرد", "success")
+                flash("اینترنت شما با موفقیت تغییر یافت", "success")
             except Exception as e:
                 flash(f"خطا در تغییر اینترنت: {e}", "danger")
 
-    return render_template(
-        'user.html',
-        user_ip=user_ip,
-        user_lease=user_lease,
-        tables=friendly_tables
-    )
+    return render_template("user.html", user_ip=user_ip, user_lease=user_lease, tables=friendly_tables)
