@@ -1,10 +1,14 @@
-from flask import Blueprint, render_template, session, redirect, url_for, request, flash
-from backend.routes.helpers import connect_api, get_user_ip, is_allowed_network, remove_user_mangle, add_user_mangle, get_dhcp_leases, fetch_routing_tables, load_settings
+from flask import Blueprint, render_template, request, session, redirect, url_for, flash
+from backend.routes.helpers import (
+    connect_api, get_user_ip, is_allowed_network,
+    get_dhcp_leases, fetch_routing_tables,
+    remove_user_mangle, add_user_mangle, load_settings
+)
 
 user_bp = Blueprint("user", __name__)
 
 @user_bp.route("/user", methods=["GET", "POST"])
-def user():
+def user_panel():
     if session.get("role") != "user":
         return redirect(url_for("auth.login"))
 
@@ -27,6 +31,7 @@ def user():
             "id": tbl["name"],
             "name": settings_data.get("routing_tables", {}).get(tbl["name"], tbl["name"])
         } for tbl in routing_tables
+        if tbl["name"] != "main"
     ]
 
     if request.method == 'POST':
