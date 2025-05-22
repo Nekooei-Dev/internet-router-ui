@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, request, session, flash, redirect, url_for
-from utils.mikrotik import connect_api, get_user_ip, is_allowed_network, remove_user_mangle, add_user_mangle, fetch_routing_tables, get_dhcp_leases, load_settings
+from flask import Blueprint, render_template, request, session, redirect, url_for, flash
+from utils.mikrotik import connect_api, get_user_ip, is_allowed_network, get_dhcp_leases, fetch_routing_tables, remove_user_mangle, add_user_mangle, load_settings
 
 user_bp = Blueprint("user", __name__)
 
@@ -19,8 +19,8 @@ def user_panel():
     leases = get_dhcp_leases(api)
     user_lease = next((lease for lease in leases if lease.get('address') == user_ip), None)
 
-    routing_tables = fetch_routing_tables(api)
     settings_data = load_settings()
+    routing_tables = fetch_routing_tables(api)
 
     friendly_tables = [
         {
@@ -29,9 +29,9 @@ def user_panel():
         } for tbl in routing_tables if tbl["name"] != "main"
     ]
 
-    if request.method == "POST":
-        selected_table = request.form.get("internet_table")
-        valid_ids = [tbl["id"] for tbl in friendly_tables]
+    if request.method == 'POST':
+        selected_table = request.form.get('internet_table')
+        valid_ids = [tbl["name"] for tbl in routing_tables]
 
         if selected_table not in valid_ids:
             flash("تیبل انتخابی نامعتبر است", "danger")
@@ -43,10 +43,8 @@ def user_panel():
             except Exception as e:
                 flash(f"خطا در تغییر اینترنت: {e}", "danger")
 
-        return redirect(url_for("user.user_panel"))
-
     return render_template(
-        "user.html",
+        'user.html',
         user_ip=user_ip,
         user_lease=user_lease,
         tables=friendly_tables
