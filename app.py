@@ -5,7 +5,7 @@ from backend.routes.user import user_bp
 from backend.routes.auth import auth_bp
 from backend.routes.common import common_bp
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="backend/templates", static_folder="backend/static")
 
 # بارگذاری کلید امنیتی از متغیر محیطی
 app.secret_key = os.environ.get("SECRET_KEY", "9f7e2c45b6a14d9a8e4d31f0c5b2a7e1")
