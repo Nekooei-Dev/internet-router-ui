@@ -1,41 +1,50 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from backend.routes.helpers import (
-    connect_api, load_settings, save_settings,
-    fetch_interfaces, fetch_routing_tables, get_dhcp_leases,
-    get_default_route, remove_user_mangle, add_user_mangle,
-    apply_table_routes, get_interface_gateways
+    connect_api, get_dhcp_leases, fetch_routing_tables, fetch_interfaces,
+    remove_user_mangle, add_user_mangle, apply_table_routes,
+    get_interface_gateways, get_default_route,
+    load_settings, save_settings
 )
 
 admin_bp = Blueprint("admin", __name__)
 
 @admin_bp.route("/admin", methods=["GET", "POST"])
-def admin_panel():
+def admin():
     if session.get("role") != "admin":
         return redirect(url_for("auth.login"))
 
     api = connect_api()
     if not api:
-        return render_template("error.html", message="ارتباط با میکروتیک برقرار نشد")
+        return render_template("error.html", message="عدم اتصال به میکروتیک")
 
     settings_data = load_settings()
+    table_interface_map = settings_data.get("table_interface_map", {})
     leases = get_dhcp_leases(api)
     routing_tables = fetch_routing_tables(api)
+    interfaces_raw = fetch_interfaces(api)
+    interface_gateways = get_interface_gateways(api)
     default_route = get_default_route(api)
 
     friendly_tables = [
         {
             "id": tbl["name"],
             "name": settings_data.get("routing_tables", {}).get(tbl["name"], tbl["name"])
-        } for tbl in routing_tables
-        if tbl["name"] != "main"
+        } for tbl in routing_tables if tbl["name"] != "main"
     ]
 
+    interfaces_map = settings_data.get("interfaces", {})
+    interfaces = {
+        i["name"]: interfaces_map.get(i["name"], i["name"])
+        for i in interfaces_raw
+    }
+
     if request.method == "POST":
-        client_ip = request.form.get("client_ip")
+        client_ip = request.form.get('client_ip')
         valid_tables = [t["name"] for t in routing_tables]
 
-        if "change_internet" in request.form:
-            new_internet = request.form.get("new_internet")
+        # تغییر اینترنت کاربر
+        if 'change_internet' in request.form:
+            new_internet = request.form.get('new_internet')
             if new_internet not in valid_tables:
                 flash("تیبل انتخابی نامعتبر است", "danger")
             else:
@@ -46,35 +55,45 @@ def admin_panel():
                 except Exception as e:
                     flash(f"خطا در تغییر اینترنت: {e}", "danger")
 
-        elif "remove_internet" in request.form:
+        # حذف اینترنت کاربر
+        elif 'remove_internet' in request.form:
             try:
                 remove_user_mangle(api, client_ip)
-                flash(f"اینترنت کاربر {client_ip} حذف شد", "success")
+                flash(f"اینترنت کاربر {client_ip} حذف شد و به پیش‌فرض برگشت", "success")
             except Exception as e:
                 flash(f"خطا در حذف اینترنت: {e}", "danger")
 
-        elif "change_default" in request.form:
-            iface = request.form.get("default_table")
+        # تغییر اینترنت پیش‌فرض
+        elif 'change_default' in request.form:
+            iface = request.form.get('default_table')
             gateways_map = get_interface_gateways(api)
+
             if iface not in gateways_map:
-                flash("گیت‌وی معتبر برای این اینترفیس یافت نشد", "danger")
+                flash("برای این اینترفیس گیت‌وی معتبری یافت نشد", "danger")
             else:
+                gateway_ip = gateways_map[iface]
                 try:
                     route_res = api.get_resource('/ip/route')
+
+                    # حذف روت پیش‌فرض موجود برای main
                     for r in route_res.get():
                         if r.get("dst-address") == "0.0.0.0/0" and r.get("routing-table", "main") == "main":
                             route_res.remove(id=r["id"])
+
+                    # افزودن روت پیش‌فرض جدید
                     route_res.add(
                         dst_address="0.0.0.0/0",
-                        gateway=gateways_map[iface],
+                        gateway=gateway_ip,
                         routing_table="main",
                         comment="default-by-admin"
                     )
+
                     flash("روت پیش‌فرض با موفقیت تنظیم شد", "success")
                 except Exception as e:
                     flash(f"خطا در تنظیم روت پیش‌فرض: {e}", "danger")
 
-        elif "update_table_interfaces" in request.form:
+        # ذخیره‌سازی جدول ↔ اینترفیس
+        elif 'update_table_interfaces' in request.form:
             try:
                 table_interface_map = {}
                 for key, value in request.form.items():
@@ -85,21 +104,11 @@ def admin_panel():
                 settings_data["table_interface_map"] = table_interface_map
                 save_settings(settings_data)
                 apply_table_routes(api, table_interface_map)
-                flash("تنظیمات ذخیره شد", "success")
+                flash("تنظیمات ارتباط جدول‌ها با اینترفیس‌ها ذخیره شد", "success")
             except Exception as e:
                 flash(f"خطا در ذخیره تنظیمات: {e}", "danger")
 
-        return redirect(url_for("admin.admin_panel"))
-
-    interfaces_raw = fetch_interfaces(api)
-    interfaces_map = settings_data.get("interfaces", {})
-    interfaces = {
-        i["name"]: interfaces_map.get(i["name"], i["name"])
-        for i in interfaces_raw
-    }
-
-    table_interface_map = settings_data.get("table_interface_map", {})
-    interface_gateways = get_interface_gateways(api)
+        return redirect(url_for('admin.admin'))
 
     return render_template(
         "admin.html",
