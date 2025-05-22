@@ -1,90 +1,28 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <title>داشبورد مدیریت اینترنت</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
-<body class="bg-light">
-
 {% include 'navbar.html' %}
-
 <div class="container mt-5">
-  {% if session.get('role') %}
-    <div class="text-center mb-4">
-      <h2 class="fw-bold"><i class="fas fa-smile-beam me-1"></i>خوش آمدید!</h2>
-      <p class="lead">شما با دسترسی <strong class="text-primary">{{ session['role'] }}</strong> وارد شده‌اید.</p>
-    </div>
-
-    <div class="row justify-content-center">
-      {% if session['role'] == 'admin' %}
-        <div class="col-md-4">
-          <div class="card border-primary shadow-sm mb-3 text-center">
-            <div class="card-body">
-              <i class="fas fa-cogs fa-2x text-primary mb-2"></i>
-              <h5 class="card-title">پنل مدیریت</h5>
-              <a href="{{ url_for('admin.admin_panel') }}" class="btn btn-primary mt-2">ورود</a>
-            </div>
-          </div>
+  <div class="text-center">
+    <h2>خوش آمدید</h2>
+    <p class="lead">شما با نقش <strong>{{ session.get('role') }}</strong> وارد شدید.</p>
+    <div class="row justify-content-center mt-4">
+      {% if session.get('role') == 'admin' %}
+        <div class="col-md-3">
+          <a href="{{ url_for('admin.index') }}" class="btn btn-outline-primary w-100 mb-2">
+            <i class="fas fa-tools"></i> بخش مدیریت
+          </a>
         </div>
-        <div class="col-md-4">
-          <div class="card border-secondary shadow-sm mb-3 text-center">
-            <div class="card-body">
-              <i class="fas fa-sliders-h fa-2x text-secondary mb-2"></i>
-              <h5 class="card-title">تنظیمات</h5>
-              <a href="{{ url_for('settings.settings') }}" class="btn btn-secondary mt-2">ورود</a>
-            </div>
-          </div>
+        <div class="col-md-3">
+          <a href="{{ url_for('settings') }}" class="btn btn-outline-secondary w-100 mb-2">
+            <i class="fas fa-cogs"></i> تنظیمات
+          </a>
         </div>
-      {% elif session['role'] == 'user' %}
-        <div class="col-md-4">
-          <div class="card border-success shadow-sm mb-3 text-center">
-            <div class="card-body">
-              <i class="fas fa-user fa-2x text-success mb-2"></i>
-              <h5 class="card-title">پنل کاربر</h5>
-              <a href="{{ url_for('user.user_panel') }}" class="btn btn-success mt-2">ورود</a>
-            </div>
-          </div>
+      {% elif session.get('role') == 'user' %}
+        <div class="col-md-3">
+          <a href="{{ url_for('user.index') }}" class="btn btn-outline-info w-100 mb-2">
+            <i class="fas fa-user"></i> پنل کاربر
+          </a>
         </div>
       {% endif %}
     </div>
-
-  {% else %}
-    <div class="row justify-content-center">
-      <div class="col-md-6">
-        <div class="card shadow-sm border border-secondary">
-          <div class="card-header bg-secondary text-white text-center">
-            <i class="fas fa-key me-1"></i>ورود
-          </div>
-          <div class="card-body">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                {% for category, message in messages %}
-                  <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
-                  </div>
-                {% endfor %}
-              {% endif %}
-            {% endwith %}
-
-            <form method="POST" action="{{ url_for('auth.login') }}">
-              <div class="mb-3">
-                <label for="password" class="form-label"><i class="fas fa-lock me-1"></i>رمز عبور:</label>
-                <input type="password" name="password" id="password" class="form-control" required>
-              </div>
-              <button type="submit" class="btn btn-dark w-100">
-                <i class="fas fa-sign-in-alt me-1"></i>ورود
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-  {% endif %}
+  </div>
 </div>
-
 {% include 'footer.html' %}
-</body>
-</html>
