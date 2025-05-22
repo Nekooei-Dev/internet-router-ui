@@ -1,6 +1,5 @@
-import ipaddress
-from flask import Blueprint, render_template, request, session, redirect, url_for, flash
-from backend.routes.utils import connect_api, get_user_ip, is_allowed_network, remove_user_mangle, add_user_mangle, get_dhcp_leases, fetch_routing_tables, load_settings
+from flask import Blueprint, render_template, session, redirect, url_for, request, flash
+from backend.routes.helpers import connect_api, get_user_ip, is_allowed_network, remove_user_mangle, add_user_mangle, get_dhcp_leases, fetch_routing_tables, load_settings
 
 user_bp = Blueprint("user", __name__)
 
@@ -18,20 +17,20 @@ def user():
         return render_template("error.html", message="آی‌پی شما مجاز نیست")
 
     leases = get_dhcp_leases(api)
-    user_lease = next((l for l in leases if l.get("address") == user_ip), None)
+    user_lease = next((lease for lease in leases if lease.get('address') == user_ip), None)
 
     settings_data = load_settings()
     routing_tables = fetch_routing_tables(api)
 
     friendly_tables = [
         {
-            "id": t["name"],
-            "name": settings_data.get("routing_tables", {}).get(t["name"], t["name"])
-        } for t in routing_tables
+            "id": tbl["name"],
+            "name": settings_data.get("routing_tables", {}).get(tbl["name"], tbl["name"])
+        } for tbl in routing_tables
     ]
 
-    if request.method == "POST":
-        selected_table = request.form.get("internet_table")
+    if request.method == 'POST':
+        selected_table = request.form.get('internet_table')
         valid_ids = [tbl["name"] for tbl in routing_tables]
 
         if selected_table not in valid_ids:
@@ -44,4 +43,9 @@ def user():
             except Exception as e:
                 flash(f"خطا در تغییر اینترنت: {e}", "danger")
 
-    return render_template("user.html", user_ip=user_ip, user_lease=user_lease, tables=friendly_tables)
+    return render_template(
+        "user.html",
+        user_ip=user_ip,
+        user_lease=user_lease,
+        tables=friendly_tables
+    )
