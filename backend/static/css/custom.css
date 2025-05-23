@@ -1,5 +1,7 @@
 /* File: backend/static/css/custom.css */
 
+@import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v30.1.0/dist/font-face.css');
+
 /* فونت عمومی پروژه */
 body {
     font-family: 'Vazirmatn', sans-serif;
