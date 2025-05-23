@@ -44,10 +44,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function showAlert(message, type) {
-        alertBox.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show alert-custom" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
-        </div>`;
-    }
+function showAlert(message, type) {
+    const toastContainer = document.getElementById('toastContainer');
+    const toastId = `toast-${Date.now()}`;
+    const toastElement = document.createElement('div');
+    toastElement.className = `toast align-items-center text-bg-${type} border-0`;
+    toastElement.id = toastId;
+    toastElement.setAttribute('role', 'alert');
+    toastElement.setAttribute('aria-live', 'assertive');
+    toastElement.setAttribute('aria-atomic', 'true');
+
+    toastElement.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+
+    toastContainer.appendChild(toastElement);
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+
 });
