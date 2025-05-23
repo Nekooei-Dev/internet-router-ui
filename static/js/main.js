@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('mangleForm');
+    if (!form) return;  // فقط اگر صفحه فرم موجود بود ادامه بده
+
     const loadingSpinner = document.getElementById('loadingSpinner');
     const alertBox = document.getElementById('alertBox');
 
