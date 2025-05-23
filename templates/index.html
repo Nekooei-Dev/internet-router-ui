@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8" />
+    <title>پنل مدیریت میکروتیک</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet" />
+    <style>
+        body { direction: rtl; }
+        .container { margin-top: 30px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="mb-4">پنل مدیریت میکروتیک</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form id="mangleForm" method="POST" action="{{ url_for('update_mangle') }}">
+        <div class="mb-3">
+            <label for="user_ip" class="form-label">آدرس IP کاربر:</label>
+            <input type="text" class="form-control" id="user_ip" name="user_ip" placeholder="مثال: 192.168.88.10" required>
+        </div>
+        <div class="mb-3">
+            <label for="routing_mark" class="form-label">مارک روت:</label>
+            <select class="form-select" id="routing_mark" name="routing_mark" required>
+                <option value="">انتخاب کنید</option>
+                {% for table in routing_tables %}
+                <option value="{{ table.name }}">{{ table.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">اعمال منگل</button>
+    </form>
+
+    <hr />
+
+    <h3>تنظیمات جدول‌ها و اینترفیس‌ها</h3>
+    <a href="{{ url_for('configure_settings') }}" class="btn btn-secondary mb-3">ویرایش تنظیمات جدول به اینترفیس</a>
+
+    <h3>اینترفیس‌ها:</h3>
+    <ul>
+        {% for iface in interfaces %}
+        <li>{{ iface.name }}</li>
+        {% endfor %}
+    </ul>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.getElementById('mangleForm').addEventListener('submit', async function(event){
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    const res = await fetch(form.action, {
+        method: 'POST',
+        body: formData
+    });
+    const data = await res.json();
+    if(data.error){
+        alert("خطا: " + data.error);
+    } else if(data.success){
+        alert(data.success);
+        form.reset();
+    }
+});
+</script>
+</body>
+</html>
