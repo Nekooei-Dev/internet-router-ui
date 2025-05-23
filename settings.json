@@ -1,14 +1,18 @@
 {
-  "routing_tables": {
-    "To-IranCell": "ایرانسل",
-    "To-HamrahAval": "همراه اول"
+  "users": {
+    "admin": {
+      "password": "admin123",
+      "role": "admin"
+    },
+    "user1": {
+      "password": "user123",
+      "role": "user"
+    }
   },
-  "interfaces": {
-    "ether1": "ایرانسل",
-    "ether2": "همراه اول"
+  "user_tables": {
+    "user1": ["ADSL", "LTE"]
   },
-  "table_interface_map": {
-    "To-IranCell": "ether1",
-    "To-HamrahAval": "ether2"
-  }
+  "tables": ["ADSL", "LTE", "WIFI", "OFF"],
+  "interfaces": ["pppoe-out1", "lte1", "wlan1"],
+  "default_route_table": "ADSL"
 }
