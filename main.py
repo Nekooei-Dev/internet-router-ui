@@ -2,21 +2,34 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for
 from mikrotik_api import MikrotikAPI
 import json
 import os
+import base64
 
 app = Flask(__name__)
 
 SETTINGS_FILE = 'settings.json'
 
+def encode_password(password):
+    return base64.b64encode(password.encode('utf-8')).decode('utf-8')
+
+def decode_password(encoded):
+    return base64.b64decode(encoded.encode('utf-8')).decode('utf-8')
+    
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
         with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            settings = json.load(f)
+            if settings.get('password'):
+                settings['password'] = decode_password(settings['password'])
+            return settings
     else:
         return {"ip": "", "username": "", "password": "", "interface": ""}
 
 def save_settings(settings):
+    settings_to_save = settings.copy()
+    if settings_to_save.get('password'):
+        settings_to_save['password'] = encode_password(settings_to_save['password'])
     with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(settings, f, ensure_ascii=False, indent=4)
+        json.dump(settings_to_save, f, ensure_ascii=False, indent=4)
 
 @app.route('/')
 def index():
