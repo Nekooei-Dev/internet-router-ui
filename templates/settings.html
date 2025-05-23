@@ -1,61 +1,43 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8" />
-    <title>تنظیمات جدول به اینترفیس</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>تنظیمات اتصال میکروتیک</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet" />
-    <style>
-        body { direction: rtl; }
-        .container { margin-top: 30px; }
-    </style>
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet" />
 </head>
 <body>
 <div class="container">
-    <h1 class="mb-4">تنظیمات جدول به اینترفیس</h1>
+    <h1 class="mb-4">تنظیمات اتصال به میکروتیک</h1>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
 
     <form method="POST" action="{{ url_for('configure_settings') }}">
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>نام جدول</th>
-                    <th>اینترفیس مرتبط</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for table in routing_tables %}
-                <tr>
-                    <td>{{ table.name }}</td>
-                    <td>
-                        <select class="form-select" name="table_{{ table.name }}">
-                            <option value="">انتخاب کنید</option>
-                            {% for iface in interfaces %}
-                            <option value="{{ iface.name }}"
-                                {% if settings.table_interface_map.get(table.name) == iface.name %}
-                                selected
-                                {% endif %}
-                            >{{ iface.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <button type="submit" class="btn btn-success">ذخیره تنظیمات</button>
+        <div class="mb-3">
+            <label for="ip" class="form-label">آدرس IP روتر</label>
+            <input type="text" class="form-control" id="ip" name="ip" value="{{ settings.ip }}" required />
+        </div>
+        <div class="mb-3">
+            <label for="username" class="form-label">نام کاربری</label>
+            <input type="text" class="form-control" id="username" name="username" value="{{ settings.username }}" required />
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">کلمه عبور</label>
+            <input type="password" class="form-control" id="password" name="password" value="{{ settings.password }}" required />
+        </div>
+        <div class="mb-3">
+            <label for="interface" class="form-label">اینترفیس</label>
+            <input type="text" class="form-control" id="interface" name="interface" value="{{ settings.interface }}" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary">ذخیره تنظیمات</button>
         <a href="{{ url_for('index') }}" class="btn btn-secondary">بازگشت</a>
     </form>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
