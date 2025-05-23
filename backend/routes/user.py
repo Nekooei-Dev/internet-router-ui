@@ -1,10 +1,10 @@
 # File: backend/routes/user.py
 
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from backend.utils.mikrotik import (
+from flask import Blueprint, render_template, request, session, redirect, url_for, flash
+from backend.routes.helpers import (
     connect_api, get_user_ip, is_allowed_network,
-    get_dhcp_leases, remove_user_mangle, add_user_mangle,
-    fetch_routing_tables, load_settings
+    get_dhcp_leases, fetch_routing_tables,
+    load_settings, remove_user_mangle, add_user_mangle
 )
 
 user_bp = Blueprint("user", __name__, url_prefix="/user")
@@ -20,7 +20,7 @@ def restrict_to_user():
 def user_dashboard():
     api = connect_api()
     if not api:
-        return render_template("error.html", message="اتصال به میکروتیک برقرار نشد")
+        return render_template("error.html", message="ارتباط با میکروتیک برقرار نشد")
 
     user_ip = get_user_ip()
     if not is_allowed_network(user_ip):
@@ -34,10 +34,9 @@ def user_dashboard():
 
     friendly_tables = [
         {
-            "id": t["name"],
-            "name": settings.get("routing_tables", {}).get(t["name"], t["name"])
-        }
-        for t in routing_tables if t["name"] != "main"
+            "id": tbl["name"],
+            "name": settings.get("routing_tables", {}).get(tbl["name"], tbl["name"])
+        } for tbl in routing_tables if tbl["name"] != "main"
     ]
 
     if request.method == "POST":
@@ -50,13 +49,8 @@ def user_dashboard():
             try:
                 remove_user_mangle(api, user_ip)
                 add_user_mangle(api, user_ip, selected_table)
-                flash("اینترنت شما تغییر یافت", "success")
+                flash("اینترنت شما با موفقیت تغییر یافت", "success")
             except Exception as e:
                 flash(f"خطا در تغییر اینترنت: {e}", "danger")
 
-    return render_template(
-        "user.html",
-        user_ip=user_ip,
-        user_lease=lease,
-        tables=friendly_tables
-    )
+    return render_template("user.html", user_ip=user_ip, user_lease=lease, tables=friendly_tables)
