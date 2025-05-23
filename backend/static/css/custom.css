@@ -1,1 +1,35 @@
+/* File: backend/static/css/custom.css */
 
+/* فونت عمومی پروژه */
+body {
+    font-family: 'Vazirmatn', sans-serif;
+    direction: rtl;
+    text-align: right;
+    background-color: #f8f9fa;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+h2, h3, h4 {
+    margin-bottom: 1rem;
+}
+
+.table th, .table td {
+    vertical-align: middle;
+    text-align: center;
+}
+
+.form-label {
+    font-weight: bold;
+}
+
+.alert {
+    direction: rtl;
+}
+
+.btn {
+    font-weight: bold;
+}
