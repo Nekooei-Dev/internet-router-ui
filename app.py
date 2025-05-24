@@ -105,11 +105,11 @@ def set_default_route(api, routing_table, gateway):
     )
 
 # ---------- 📌 8. ایجاد روت جدول-اینترفیس ----------
-def create_table_routes(api, table_name, gateway):
+def create_table_routes(api, table_name, interface_name):
     ip_routes = api.get_resource('/ip/route')
     ip_routes.add(
         dst_address="0.0.0.0/0",
-        gateway=gateway,
+        gateway=interface_name,
         routing_table=table_name,
         check_gateway="ping"
     )
