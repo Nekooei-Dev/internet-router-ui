@@ -105,13 +105,18 @@ def set_default_route(api, routing_table, gateway):
     )
 
 # ---------- 📌 8. ایجاد روت جدول-اینترفیس ----------
-def create_table_routes(api, table_name, interface_name):
+def create_table_routes(api, table_name, interface_name, interface_gateways):
     ip_routes = api.get_resource('/ip/route')
+    gateway_ip = interface_gateways.get(interface_name)
+    if not gateway_ip:
+        print(f"❌ گیت‌وی برای اینترفیس {interface_name} یافت نشد.")
+        return
     ip_routes.add(
         dst_address="0.0.0.0/0",
-        gateway=interface_name,
+        gateway=gateway_ip,
         routing_table=table_name,
-        check_gateway="ping"
+        check_gateway="ping",
+        comment=f"auto-route:{table_name}"
     )
 
 # ---------- 📌 9. دسترسی نقش ----------
