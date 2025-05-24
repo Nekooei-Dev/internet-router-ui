@@ -161,21 +161,36 @@ def get_default_route(api):
 
 # ---------- 📌 13. اعمال روت‌ها از map ----------
 def apply_table_routes(api, table_interface_map):
-    route_res = api.get_resource('/ip/route')
-    routes = route_res.get()
+    interface_gateways = get_interface_gateways(api)
+    ip_routes = api.get_resource('/ip/route')
+    existing_routes = ip_routes.get()
 
     for table, iface in table_interface_map.items():
-        exists = any(r.get('routing-table') == table and r.get('gateway') == iface for r in routes)
+        gateway_ip = interface_gateways.get(iface)
+        if not gateway_ip:
+            print(f"⚠️ گیت‌وی برای اینترفیس {iface} یافت نشد. جدول {table} نادیده گرفته شد.")
+            continue
+
+        # بررسی وجود مسیر مشابه
+        exists = any(
+            r.get('routing-table') == table and
+            r.get('gateway') == gateway_ip and
+            r.get('dst-address') == '0.0.0.0/0'
+            for r in existing_routes
+        )
+
         if not exists:
             try:
-                route_res.add(
+                ip_routes.add(
                     dst_address="0.0.0.0/0",
-                    gateway=iface,
+                    gateway=gateway_ip,
                     routing_table=table,
+                    check_gateway="ping",
                     comment=f"auto-route:{table}"
                 )
+                print(f"✅ روت برای جدول {table} با گیت‌وی {gateway_ip} اضافه شد.")
             except Exception as e:
-                print(f"خطا در اضافه کردن روت برای جدول {table}: {e}")
+                print(f"❌ خطا در افزودن روت برای جدول {table}: {e}")
 
 # ---------- 📌 14. گرفتن گیت‌وی برای هر اینترفیس ----------
 def get_interface_gateways(api):
