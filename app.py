@@ -7,7 +7,7 @@ from routeros_api import RouterOsApiPool, exceptions
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "9f7e2c45b6a14d9a8e4d31f0c5b2a7e1")
 
-API_HOST = os.environ.get("API_HOST", "172.30.30.254")
+API_HOST = os.environ.get("API_HOST", "172.32.40.1")
 API_USER = os.environ.get("API_USER", "API")
 API_PASS = os.environ.get("API_PASS", "API")
 API_PORT = int(os.environ.get("API_PORT", 8728))
