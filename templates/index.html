@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>صفحه اصلی</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/fontawesome.min.css">
+    <link href="{{ url_for('static', filename='static/css/custom.css') }}" rel="stylesheet" />
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{{ url_for('index') }}">مدیریت اینترنت</a>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">درباره</a></li>
+        {% if role == 'admin' %}
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin') }}">مدیریت</a></li>
+        {% elif role == 'user' %}
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('user') }}">کاربر</a></li>
+        {% endif %}
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">خروج</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="container mt-5">
+    <h2>خوش آمدید</h2>
+    <p>شما با دسترسی <strong>{{ role }}</strong> وارد شدید.</p>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/fontawesome.min.js"></script>
+<script src="{{ url_for('static', filename='static/js/custom.js') }}"></script>
+</body>
+</html>

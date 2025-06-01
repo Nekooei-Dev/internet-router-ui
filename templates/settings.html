@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>تنظیمات اولیه</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/fontawesome.min.css">
+    <link href="{{ url_for('static', filename='static/css/custom.css') }}" rel="stylesheet" /></head>
+<body class="container mt-5">
+
+    <h2 class="mb-4">تنظیمات نام‌گذاری</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <h5>📶 نام‌گذاری اینترفیس‌ها</h5>
+        {% for iface in interfaces %}
+            <div class="mb-2">
+                <label class="form-label">{{ iface.name }}</label>
+                <input type="text" class="form-control" name="iface_{{ iface.name }}"
+                       value="{{ settings.interfaces.get(iface.name, '') }}">
+            </div>
+        {% endfor %}
+
+        <hr>
+
+        <h5>🔁 نام‌گذاری جدول‌های روت</h5>
+        {% for table in routing_tables %}
+            <div class="mb-2">
+                <label class="form-label">{{ table.name }}</label>
+                <input type="text" class="form-control" name="table_{{ table.name }}"
+                       value="{{ settings.routing_tables.get(table.name, '') }}">
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary mt-3">ذخیره تنظیمات</button>
+    </form>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/fontawesome.min.js"></script>
+<script src="{{ url_for('static', filename='static/js/custom.js') }}"></script>
+</body>
+</html>

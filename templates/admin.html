@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>پنل ادمین</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/fontawesome.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='static/css/custom.css') }}">
+</head>
+<body>
+  <!-- ✅ نوار ناوبری -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom mb-4">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{{ url_for('admin') }}">مدیریت اینترنت</a>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('settings') }}">⚙️ تنظیمات</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">🚪 خروج</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <h2 class="mb-4">پنل مدیریت اینترنت</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <h5>👥 همه کاربران و وضعیت اینترنت</h5>
+    <table class="table table-striped table-bordered table-sm">
+      <thead class="table-light">
+        <tr>
+          <th>IP</th>
+          <th>MAC</th>
+          <th>Host</th>
+          <th>نوع اینترنت</th>
+          <th>دسترسی کاربر</th>
+          <th>توضیح</th>
+          <th>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in user_status_list %}
+        <tr>
+          <td>{{ user.ip }}</td>
+          <td>{{ user.mac }}</td>
+          <td>{{ user.host }}</td>
+          <td>
+            {% if user.routing_mark == 'main' %}
+              پیش‌فرض
+            {% else %}
+              {{ user.routing_mark }}
+            {% endif %}
+          </td>
+          <td>
+            {% if user.restricted %}
+              ❌ غیرفعال
+            {% else %}
+              ✅ فعال
+            {% endif %}
+          </td>
+          <td>
+            <form method="POST" class="d-flex gap-2">
+              <input type="hidden" name="client_ip" value="{{ user.ip }}">
+              <input type="text" name="new_label" value="{{ user.label or '' }}" class="form-control form-control-sm" placeholder="مثلاً لپ‌تاپ مدیر">
+              <button type="submit" name="save_label" class="btn btn-sm btn-outline-secondary">💾</button>
+            </form>
+          </td>
+          <td>
+            <form method="POST" class="d-inline">
+              <input type="hidden" name="client_ip" value="{{ user.ip }}">
+              {% if user.routing_mark != 'main' %}
+                <button type="submit" name="remove_internet" class="btn btn-sm btn-danger">بازگشت پیش‌فرض</button>
+              {% endif %}
+              {% if user.restricted %}
+                <button type="submit" name="unblock_ip" class="btn btn-sm btn-success">فعال‌سازی</button>
+              {% else %}
+                <button type="submit" name="block_ip" class="btn btn-sm btn-warning">غیرفعال‌سازی</button>
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- ✅ تغییر اینترنت کاربر -->
+    <form method="POST" class="mb-4">
+      <h5>🔁 تغییر اینترنت کاربر</h5>
+      <div class="row mb-2">
+        <div class="col-md-4">
+          <select class="form-select" name="client_ip">
+            {% for lease in leases %}
+              <option value="{{ lease.get('address', '') }}">
+                {{ lease.get('host-name', '---') }} - {{ lease.get('mac-address', '---') }} - {{ lease.get('address', '---') }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <select name="new_internet" class="form-select">
+            {% for table in tables %}
+              {% if table.id != "main" %}
+                <option value="{{ table.id }}">{{ table.name }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+          <button type="submit" name="change_internet" class="btn btn-primary">تغییر اینترنت</button>
+          <button type="submit" name="remove_internet" class="btn btn-danger">بازگشت به پیش‌فرض</button>
+        </div>
+      </div>
+    </form>
+
+    <!-- ✅ فرم روت پیش‌فرض -->
+    <form method="POST" class="mb-4">
+      <h5>🌐 تغییر اینترنت پیش‌فرض</h5>
+      <div class="form-group">
+        <label for="default_table">انتخاب اینترفیس برای روت پیش‌فرض:</label>
+        <select name="default_table" id="default_table" class="form-control">
+          {% for iface_id, iface_name in interfaces.items() %}
+            <option value="{{ iface_id }}">
+              {{ iface_id }} ({{ iface_name }})
+              {% if iface_id in interface_gateways %}
+                → گیت‌وی: {{ interface_gateways[iface_id]['gateway'] }}
+              {% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" name="change_default" class="btn btn-warning mt-2">ثبت روت پیش‌فرض</button>
+    </form>
+
+    <!-- ✅ ارتباط جدول‌ها با اینترفیس‌ها -->
+    <form method="POST">
+      <h5>📶 ارتباط جدول‌ها با اینترفیس‌ها</h5>
+      {% for table in tables %}
+        {% if table.id != "main" %}
+          <div class="row mb-2">
+            <div class="col-md-4">
+              <label class="form-label">{{ table.name }}</label>
+            </div>
+            <div class="col-md-4">
+              <select name="interface_for_{{ table.id }}" class="form-select">
+                {% for iface_id, iface_name in interfaces.items() %}
+                  <option value="{{ iface_id }}" {% if table_interface_map.get(table.id) == iface_id %}selected{% endif %}>
+                    {{ iface_name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+      <button type="submit" name="update_table_interfaces" class="btn btn-success mt-3">ذخیره ارتباط‌ها</button>
+    </form>
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/fontawesome.min.js"></script>
+  <script src="{{ url_for('static', filename='static/js/custom.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>پنل کاربر</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/fontawesome.min.css">
+    <link href="{{ url_for('static', filename='static/css/custom.css') }}" rel="stylesheet" /></head>
+<body class="container mt-5">
+    {% if blocked %}
+    <div class="alert alert-warning">
+      🚫 دسترسی شما برای تغییر اینترنت توسط ادمین غیرفعال شده است.
+    </div>
+    {% else %}
+    <h2 class="mb-4">تغییر مسیر اینترنت</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <p>IP شما: <strong>{{ user_ip }}</strong></p>
+    {% if user_lease %}
+        <p>MAC Address: <strong>{{ user_lease['mac-address'] }}</strong></p>
+        <p>Host: <strong>{{ user_lease.get('host-name', '---') }}</strong></p>
+    {% endif %}
+
+    <form method="POST">
+        <div class="mb-3">
+            <label class="form-label">انتخاب اینترنت دلخواه:</label>
+            <select name="internet_table" class="form-select">
+                {% for table in tables %}
+                  {% if table.id != "main" %}
+                    <option value="{{ table.id }}">{{ table.name }}</option>
+                  {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">تغییر اینترنت</button>
+    </form>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/fontawesome.min.js"></script>
+<script src="{{ url_for('static', filename='static/js/custom.js') }}"></script>
+{% endif %}
+</body>
+</html>

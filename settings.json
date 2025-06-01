@@ -1,0 +1,25 @@
+{
+  "routing_tables": {
+    "IranCell": "ایرانسل",
+    "HamrahAval": "همراه اول",
+    "adsl": "ADSL اینترنت",
+  },
+  "interfaces": {
+    "Ether1": "ایرانسل",
+    "Ether2": "همراه اول"
+  },
+  "routes": {
+    
+  },
+  "table_interface_map": {
+    "IranCell": "Ether1",
+    "HamrahAval": "Ether2"
+  },
+  "blocked_ips": [
+    "192.168.1.100"
+  ],
+  "user_labels": {
+    "192.168.1.22": "موبایل مهندس نکویی",
+    "192.168.1.101": "سیستم حسابداری نکویی"
+  }
+}
