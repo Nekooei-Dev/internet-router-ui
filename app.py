@@ -469,19 +469,6 @@ def admin():
             interface_gateways = get_interface_gateways(api)
             default_route = manage_route(api)
 
-            # friendly tables for template
-            friendly_tables = [
-                {"id": t["name"], "name": settings_data.get("routing_tables", {}).get(t["name"], t["name"])}
-                for t in routing_tables
-            ]
-
-            # build interfaces mapping (name -> friendly name)
-            interfaces_map = settings_data.get("interfaces", {}) or {}
-            interfaces = {
-                i["name"]: interfaces_map.get(i["name"], i["name"])
-                for i in interfaces_raw
-            }
-
             # determine default route interface (the interface that currently has dst 0.0.0.0/0 in main table)
             default_route_iface = None
             try:
@@ -491,6 +478,22 @@ def admin():
                         break
             except Exception:
                 default_route_iface = None
+
+            # build interfaces mapping (name -> friendly name)
+            interfaces_map = settings_data.get("interfaces", {}) or {}
+            interfaces = {
+                i["name"]: interfaces_map.get(i["name"], i["name"])
+                for i in interfaces_raw
+            }
+
+            # friendly tables for template
+            friendly_tables = [
+                {"id": t["name"], "name": settings_data.get("routing_tables", {}).get(t["name"], t["name"])}
+                for t in routing_tables
+            ]
+
+            print("Default route iface:", default_route_iface)
+            print("Interfaces keys:", list(interfaces.keys()))
 
             # pass admin's own ip (used in template to optionally preselect a lease)
             admin_user_ip = get_user_ip()
