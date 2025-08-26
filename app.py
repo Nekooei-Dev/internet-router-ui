@@ -578,6 +578,11 @@ def admin():
                 elif 'remove_internet' in request.form:
                     manage_user_mangle(api, client_ip, mode="remove")
                     flash(f"اینترنت کاربر {client_ip} حذف شد و به پیش‌فرض برگشت", "success")
+
+                elif 'delete_ip' in request.form:
+                    ip_to_delete = request.form.get('delete_ip')
+                    ok, msg = delete_ip_configs(api, ip_to_delete)
+                    flash(msg, "success" if ok else "danger")
                 
                 elif 'change_default' in request.form:
                     iface = request.form.get('default_table')  # اگر name فیلد چیز دیگری است، همین را با نام درستش عوض کنید
@@ -663,6 +668,30 @@ def admin():
         except Exception as e:
             print(f"❌ خطا در پردازش صفحه ادمین: {e}")
             return render_template("error.html", message="خطا در بارگذاری اطلاعات پنل ادمین")
+
+def delete_ip_configs(api, ip_address):
+    try:
+        # 🔹 حذف رول‌های Mangle
+        mangle_res = api.get_resource('/ip/firewall/mangle')
+        for rule in mangle_res.get():
+            if rule.get('src-address') == ip_address or rule.get('dst-address') == ip_address:
+                mangle_res.remove(id=rule['id'])
+
+        # 🔹 حذف Queue های مربوط به IP
+        queue_res = api.get_resource('/queue/simple')
+        for q in queue_res.get():
+            if ip_address in q.get('target', ''):
+                queue_res.remove(id=q['id'])
+
+        # 🔹 حذف Route های مربوط به IP
+        route_res = api.get_resource('/ip/route')
+        for r in route_res.get():
+            if r.get('comment') == ip_address or r.get('dst-address') == ip_address:
+                route_res.remove(id=r['id'])
+
+        return True, f"✅ همه تنظیمات برای {ip_address} حذف شد"
+    except Exception as e:
+        return False, f"❌ خطا در حذف تنظیمات {ip_address}: {e}"
 
 
 
