@@ -31,15 +31,15 @@
     <form method="POST">
         <div class="mb-3">
             <label class="form-label">انتخاب اینترنت دلخواه:</label>
-            <select name="internet_table" class="form-select">
-                {% for table in tables %}
-                  {% if table.id != "main" %}
-                    <option value="{{ table.id }}" {% if table.id == user.routing_mark %}selected{% endif %}>
-                      {{ table.name }}
-                    </option>
-                  {% endif %}
-                {% endfor %}
-            </select>
+                <select name="internet_table" class="form-select">
+                    {% for table in tables %}
+                      {% if table.id != "main" %}
+                        <option value="{{ table.id }}" {% if user.routing_mark == table.id %}selected{% endif %}>
+                          {{ table.name }}
+                        </option>
+                      {% endif %}
+                    {% endfor %}
+                </select>
         </div>
         <button type="submit" class="btn btn-primary">تغییر اینترنت</button>
     </form>
