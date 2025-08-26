@@ -5,10 +5,10 @@
   <title>پنل ادمین</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/fontawesome.min.css">
-  <link rel="stylesheet" href="{{ url_for('static', filename='static/css/custom.css') }}">
+  <!-- corrected static path -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
 </head>
 <body>
-  <!-- ✅ نوار ناوبری -->
   <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom mb-4">
     <div class="container-fluid">
       <a class="navbar-brand" href="{{ url_for('admin') }}">مدیریت اینترنت</a>
@@ -22,7 +22,6 @@
   </nav>
 
   <div class="container">
-
     <h2 class="mb-4">پنل مدیریت اینترنت</h2>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -85,9 +84,8 @@
                 <button type="submit" name="block_ip" class="btn btn-sm btn-warning">غیرفعال‌سازی</button>
               {% endif %}
             </form>
-          
+
             {% if user.routing_mark != 'main' %}
-              <!-- ✅ دکمه حذف کامل فقط وقتی اینترنت پیش‌فرض نیست -->
               <form method="post" class="d-inline">
                 <input type="hidden" name="delete_ip" value="{{ user.ip }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger"
@@ -102,7 +100,7 @@
       </tbody>
     </table>
 
-    <!-- ✅ تغییر اینترنت کاربر -->
+    <!-- تغییر اینترنت کاربر -->
     <form method="POST" class="mb-4">
       <h5>🔁 تغییر اینترنت کاربر</h5>
       <div class="row mb-2">
@@ -131,14 +129,14 @@
       </div>
     </form>
 
-    <!-- ✅ فرم روت پیش‌فرض -->
+    <!-- فرم روت پیش‌فرض -->
     <form method="POST" class="mb-4">
       <h5>🌐 تغییر اینترنت پیش‌فرض</h5>
       <div class="form-group">
         <label for="default_table">انتخاب اینترفیس برای روت پیش‌فرض:</label>
         <select name="default_table" id="default_table" class="form-control">
           {% for iface_id, iface_name in interfaces.items() %}
-            <option value="{{ iface_id }}" {% if iface_id == default_route_iface %}selected{% endif %}>
+            <option value="{{ iface_id }}" {% if default_route_iface and iface_id == default_route_iface %}selected{% endif %}>
               {{ iface_id }} ({{ iface_name }})
               {% if iface_id in interface_gateways %}
                 → گیت‌وی: {{ interface_gateways[iface_id]['gateway'] }}
@@ -150,8 +148,7 @@
       <button type="submit" name="change_default" class="btn btn-warning mt-2">ثبت روت پیش‌فرض</button>
     </form>
 
-
-    <!-- ✅ ارتباط جدول‌ها با اینترفیس‌ها -->
+    <!-- ارتباط جدول‌ها با اینترفیس‌ها -->
     <form method="POST">
       <h5>📶 ارتباط جدول‌ها با اینترفیس‌ها</h5>
       {% for table in tables %}
@@ -179,6 +176,6 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/fontawesome.min.js"></script>
-  <script src="{{ url_for('static', filename='static/js/custom.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
 </body>
 </html>
