@@ -506,6 +506,7 @@ def user():
                     "name": settings_data.get("routing_tables", {}).get(tbl["name"], tbl["name"])
                 } for tbl in routing_tables
             ]
+
             
             user_routing_mark = next(
                 (u["routing_mark"] for u in get_custom_routed_users(api) if u["ip"] == user_ip),
@@ -566,20 +567,20 @@ def admin():
                 } for tbl in routing_tables
             ]
 
-            default_route_iface = None
-            for r in api.get_resource('/ip/route').get():
-                if r.get('dst-address') == '0.0.0.0/0' and r.get('routing-table', 'main') == 'main':
-                    default_route_iface = r.get('interface')
-                    break
-
             default_iface_name = interfaces_map.get(default_route_iface, default_route_iface)
-
             interfaces_map = settings_data.get("interfaces", {})
             interfaces = {
                 i["name"]: interfaces_map.get(i["name"], i["name"])
                 for i in interfaces_raw
             }
 
+            default_route_iface = None
+            for r in api.get_resource('/ip/route').get():
+                if r.get('dst-address') == '0.0.0.0/0' and r.get('routing-table', 'main') == 'main':
+                    default_route_iface = r.get('interface')
+                    break
+
+            
             if request.method == 'POST':
                 client_ip = request.form.get('client_ip')
                 valid_tables = [t["name"] for t in routing_tables]
@@ -602,19 +603,16 @@ def admin():
                     flash(msg, "success" if ok else "danger")
                 
                 elif 'change_default' in request.form:
-                    iface = request.form.get('default_table')  # اگر name فیلد چیز دیگری است، همین را با نام درستش عوض کنید
+                    iface = request.form.get('default_table')
                     if iface not in interface_gateways:
                         flash("برای این اینترفیس گیت‌وی معتبری یافت نشد", "danger")
                     else:
                         gateway_ip = interface_gateways[iface]['gateway']
                         route_res = api.get_resource('/ip/route')
-                
-                        # حذف روت پیش‌فرض فعلی از جدول main
                         for r in route_res.get():
                             if r.get("dst-address") == "0.0.0.0/0" and r.get("routing-table", "main") == "main":
                                 route_res.remove(id=r["id"])
-                
-                        # افزودن روت پیش‌فرض جدید
+    
                         route_res.add(
                             dst_address="0.0.0.0/0",
                             gateway=gateway_ip,
@@ -675,8 +673,9 @@ def admin():
                 leases=leases,
                 custom_users=custom_users,
                 user_status_list=user_status_list,
-                tables=friendly_tables,
+                tables=[{"id": t["name"], "name": settings_data.get("routing_tables", {}).get(t["name"], t["name"])} for t in routing_tables],
                 default_route=default_route,
+                default_route_iface=default_route_iface,
                 interfaces=interfaces,
                 table_interface_map=table_interface_map,
                 interface_gateways=interface_gateways
