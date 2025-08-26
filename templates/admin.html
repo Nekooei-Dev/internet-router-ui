@@ -85,13 +85,17 @@
                 <button type="submit" name="block_ip" class="btn btn-sm btn-warning">غیرفعال‌سازی</button>
               {% endif %}
             </form>
-            <form method="post" class="d-inline">
-              <input type="hidden" name="delete_ip" value="{{ user.ip }}">
-              <button type="submit" class="btn btn-sm btn-outline-danger"
-                      onclick="return confirm('مطمئنی می‌خوای این IP و همه تنظیماتش حذف بشه؟')">
-                حذف
-              </button>
-            </form>
+          
+            {% if user.routing_mark != 'main' %}
+              <!-- ✅ دکمه حذف کامل فقط وقتی اینترنت پیش‌فرض نیست -->
+              <form method="post" class="d-inline">
+                <input type="hidden" name="delete_ip" value="{{ user.ip }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('مطمئنی می‌خوای اینترنت و همه تنظیمات {{ user.ip }} حذف بشه؟')">
+                  حذف
+                </button>
+              </form>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
