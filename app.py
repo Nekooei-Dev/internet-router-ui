@@ -553,6 +553,9 @@ def admin():
 
             settings_data = load_settings()
             table_interface_map = settings_data.get("table_interface_map", {})
+            for tbl in routing_tables:
+                if tbl['name'] not in table_interface_map:
+                    table_interface_map[tbl['name']] = next(iter(interfaces_raw), {}).get('name', None)
             interface_gateways = get_interface_gateways(api)
             default_route = manage_route(api)
 
@@ -562,6 +565,12 @@ def admin():
                     "name": settings_data.get("routing_tables", {}).get(tbl["name"], tbl["name"])
                 } for tbl in routing_tables
             ]
+
+            default_route_iface = None
+            for r in api.get_resource('/ip/route').get():
+                if r.get('dst-address') == '0.0.0.0/0' and r.get('routing-table', 'main') == 'main':
+                    default_route_iface = r.get('interface')
+                    break
 
             interfaces_map = settings_data.get("interfaces", {})
             interfaces = {
