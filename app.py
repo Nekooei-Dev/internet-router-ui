@@ -487,7 +487,7 @@ def admin():
             try:
                 for r in api.get_resource('/ip/route').get():
                     if r.get('dst-address') == '0.0.0.0/0' and r.get('routing-table', 'main') == 'main':
-                        default_route_iface = r.get('gateway') or r.get('gateway-interface')
+                        default_route_iface = r.get('gateway-interface')
                         break
             except Exception:
                 default_route_iface = None
