@@ -578,11 +578,29 @@ def admin():
                 elif 'remove_internet' in request.form:
                     manage_user_mangle(api, client_ip, mode="remove")
                     flash(f"اینترنت کاربر {client_ip} حذف شد و به پیش‌فرض برگشت", "success")
-
+                
                 elif 'change_default' in request.form:
-                    iface = request.form.get('default_table')
+                    iface = request.form.get('default_table')  # اگر name فیلد چیز دیگری است، همین را با نام درستش عوض کنید
                     if iface not in interface_gateways:
                         flash("برای این اینترفیس گیت‌وی معتبری یافت نشد", "danger")
+                    else:
+                        gateway_ip = interface_gateways[iface]['gateway']
+                        route_res = api.get_resource('/ip/route')
+                
+                        # حذف روت پیش‌فرض فعلی از جدول main
+                        for r in route_res.get():
+                            if r.get("dst-address") == "0.0.0.0/0" and r.get("routing-table", "main") == "main":
+                                route_res.remove(id=r["id"])
+                
+                        # افزودن روت پیش‌فرض جدید
+                        route_res.add(
+                            dst_address="0.0.0.0/0",
+                            gateway=gateway_ip,
+                            **{"routing-table": "main"},
+                            comment="default-by-admin"
+                        )
+                        flash("روت پیش‌فرض با موفقیت تنظیم شد", "success")
+
                         
                 elif 'block_ip' in request.form:
                     ip = request.form.get('client_ip')
@@ -601,22 +619,6 @@ def admin():
                         settings_data["blocked_ips"] = blocked
                         save_settings(settings_data)
                         flash(f"تغییر اینترنت برای {ip} فعال شد", "success")
-
-                        
-                    else:
-                        gateway_ip = interface_gateways[iface]['gateway']
-                        route_res = api.get_resource('/ip/route')
-                        for r in route_res.get():
-                            if r.get("dst-address") == "0.0.0.0/0" and r.get("routing-table", "main") == "main":
-                                route_res.remove(id=r["id"])
-
-                        route_res.add(
-                            dst_address="0.0.0.0/0",
-                            gateway=gateway_ip,
-                            **{"routing-table": "main"},
-                            comment="default-by-admin"
-                        )
-                        flash("روت پیش‌فرض با موفقیت تنظیم شد", "success")
 
                 elif 'save_label' in request.form:
                     ip = request.form.get('client_ip')
