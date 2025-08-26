@@ -34,7 +34,7 @@
                 <select name="internet_table" class="form-select">
                     {% for table in tables %}
                       {% if table.id != "main" %}
-                        <option value="{{ table.id }}" {% if user.routing_mark == table.id %}selected{% endif %}>
+                        <option value="{{ table.id }}" {% if user_routing_mark == table.id %}selected{% endif %}>
                           {{ table.name }}
                         </option>
                       {% endif %}
