@@ -109,7 +109,7 @@
         <div class="col-md-4">
           <select class="form-select" name="client_ip">
             {% for lease in leases %}
-              <option value="{{ lease.get('address', '') }}">
+              <option value="{{ lease.get('address', '') }}" {% if lease.get('address') == user_ip %}selected{% endif %}>
                 {{ lease.get('host-name', '---') }} - {{ lease.get('mac-address', '---') }} - {{ lease.get('address', '---') }}
               </option>
             {% endfor %}
@@ -138,12 +138,12 @@
         <label for="default_table">انتخاب اینترفیس برای روت پیش‌فرض:</label>
         <select name="default_table" id="default_table" class="form-control">
           {% for iface_id, iface_name in interfaces.items() %}
-            <option value="{{ iface_id }}">
-              {{ iface_id }} ({{ iface_name }})
-              {% if iface_id in interface_gateways %}
-                → گیت‌وی: {{ interface_gateways[iface_id]['gateway'] }}
-              {% endif %}
-            </option>
+        <option value="{{ iface_id }}" {% if iface_id == default_route_iface %}selected{% endif %}>
+          {{ iface_id }} ({{ iface_name }})
+          {% if iface_id in interface_gateways %}
+            → گیت‌وی: {{ interface_gateways[iface_id]['gateway'] }}
+          {% endif %}
+        </option>
           {% endfor %}
         </select>
       </div>
