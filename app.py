@@ -492,8 +492,8 @@ def admin():
                 for t in routing_tables
             ]
 
-            print("Default route iface:", default_route_iface)
-            print("Interfaces keys:", list(interfaces.keys()))
+            flash(f"Default route iface: {default_route_iface}", "info")
+            flash(f"Interfaces keys: {list(interfaces.keys())}", "info")
 
             # pass admin's own ip (used in template to optionally preselect a lease)
             admin_user_ip = get_user_ip()
