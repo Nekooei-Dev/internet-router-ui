@@ -569,8 +569,10 @@ def admin():
             default_route_iface = None
             for r in api.get_resource('/ip/route').get():
                 if r.get('dst-address') == '0.0.0.0/0' and r.get('routing-table', 'main') == 'main':
-                    default_iface_name = interfaces_map.get(default_route_iface, default_route_iface)
+                    default_route_iface = r.get('interface')
                     break
+
+            default_iface_name = interfaces_map.get(default_route_iface, default_route_iface)
 
             interfaces_map = settings_data.get("interfaces", {})
             interfaces = {
