@@ -499,13 +499,18 @@ def user():
 
             settings_data = load_settings()
             routing_tables = mik_data.get("routing_tables", [])
-
+            
             friendly_tables = [
                 {
                     "id": tbl["name"],
                     "name": settings_data.get("routing_tables", {}).get(tbl["name"], tbl["name"])
                 } for tbl in routing_tables
             ]
+            
+            user_routing_mark = next(
+                (u["routing_mark"] for u in get_custom_routed_users(api) if u["ip"] == user_ip),
+                "main"
+            )
 
             if request.method == 'POST':
                 selected_table = request.form.get('internet_table')
@@ -520,7 +525,8 @@ def user():
                 'user.html',
                 user_ip=user_ip,
                 user_lease=user_lease,
-                tables=friendly_tables
+                tables=friendly_tables,
+                user_routing_mark=user_routing_mark
             )
         except Exception as e:
             print(f"❌ خطا در پردازش صفحه کاربر: {e}")
